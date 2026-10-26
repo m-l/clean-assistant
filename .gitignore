@@ -41,3 +41,6 @@ data/
 Thumbs.db
 .vscode/
 .idea/
+prefs.json
+battery_health.json
+sensor_care.json

@@ -31,7 +31,7 @@ from backend.battery import BatteryHealth
 from backend.sensors import SensorCare
 from backend.mqtt_bridge import MqttBridge
 from backend.cloud_stub import LocalCloud
-from backend.i18n import VALID_LANGS
+from backend.i18n import VALID_LANGS, t
 
 STATIC = Path(__file__).parent / "static"
 env = load_env()
@@ -547,6 +547,8 @@ mqtt.battery_provider = battery_health.summary
 mqtt.sensors_provider = sensor_care.summary
 mqtt.sensors_reset = sensor_care.reset
 mqtt.lang_provider = lambda: _ui_prefs["lang"]        # idioma de las entidades/opciones en HA
+# mqtt.ha_notify_provider se asigna más abajo, junto a _on_mqtt_connectivity_change (necesita
+# _supervisor_post, definida más adelante en este archivo).
 
 
 def _send_zone_group(group: str):
@@ -1073,6 +1075,55 @@ def _supervisor_get(path: str):
             return json.load(r).get("data")
     except Exception:
         return None
+
+
+def _supervisor_post(path: str, payload: dict) -> bool:
+    """POST a la API del Supervisor de Home Assistant. A diferencia de _supervisor_get(), esto
+    se usa para llamar a servicios de Home Assistant CORE (p. ej. persistent_notification.*) a
+    través del proxy del Supervisor en /core/api/..., lo que requiere `homeassistant_api: true`
+    en config.yaml además de `hassio_api: true` (ver MQTT_NOTIF_ID más abajo). Devuelve True si
+    la llamada se aceptó (2xx); nunca lanza excepción -- un fallo aquí (p. ej. el permiso no
+    concedido todavía porque el usuario no ha reinstalado el add-on tras el cambio) no debe
+    tirar abajo el resto de la app."""
+    import urllib.request
+    tok = os.environ.get("SUPERVISOR_TOKEN")
+    if not tok:
+        return False
+    try:
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request("http://supervisor" + path, data=data, method="POST",
+                                     headers={"Authorization": "Bearer " + tok,
+                                              "Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=4) as r:
+            return 200 <= r.status < 300
+    except Exception as e:
+        print(f"[HA notify] error llamando a {path}: {e}")
+        return False
+
+
+MQTT_NOTIF_ID = "clean_assistant_mqtt_offline"
+
+
+def _on_mqtt_connectivity_change(connected: bool):
+    """Avisa DIRECTAMENTE en Home Assistant (persistent_notification) cuando la propia conexión
+    MQTT de Clean Assistant con el broker se cae o se restablece -- ver
+    MqttBridge.ha_notify_provider. Pensado para sustituir a un automatismo de HA que observe la
+    entidad de disponibilidad: esta llamada es inmediata (sin esperar al próximo ciclo de
+    comprobación de HA) y no depende de que ningún automatismo esté bien configurado."""
+    lang = _ui_prefs.get("lang", "es")
+    if connected:
+        _supervisor_post("/core/api/services/persistent_notification/dismiss",
+                          {"notification_id": MQTT_NOTIF_ID})
+    else:
+        _supervisor_post("/core/api/services/persistent_notification/create", {
+            "notification_id": MQTT_NOTIF_ID,
+            "title": t(lang, "Clean Assistant: conexión MQTT perdida"),
+            "message": t(lang, "Clean Assistant ha perdido la conexión con el broker MQTT. "
+                                "Las entidades del robot pueden quedar sin actualizar hasta "
+                                "que se restablezca.")})
+
+
+mqtt.ha_notify_provider = _on_mqtt_connectivity_change  # avisa a HA si la app pierde su propia conexión MQTT
 
 
 def _host_lan_ip() -> str | None:

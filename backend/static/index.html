@@ -1430,6 +1430,34 @@
   document.getElementById('gotoCancel').addEventListener('click',function(){ setGoto(false); });
   var twiceOn=false;   // doble pasada para "Limpiar selección" (modo x2)
   wireToggle('twiceTog',function(on){twiceOn=on;api('twice',{value:on});});
+  // ---- conserva la selección de la pestaña "Limpieza" al cambiar de idioma ----
+  // Habitaciones elegidas, x2 y los segmentos de modo/succión/agua/mopa de esta pestaña son una
+  // elección de un solo uso para la PRÓXIMA limpieza (no una preferencia guardada en el robot, a
+  // diferencia de tipo de base / frecuencia de vaciado / etc., que sí se restauran solas), así
+  // que cualquier recarga de página las pierde -- y cambiar el idioma recarga la página (ver el
+  // selector de idioma de la cabecera). Se guarda justo antes de esa recarga y se restaura al
+  // arrancar, para que cambiar el idioma no tire la selección en curso.
+  (function(){
+    var sel=document.getElementById('langSel');
+    if(sel){ sel.addEventListener('change',function(){
+      try{
+        var segVal=function(cmd){ var b=document.querySelector('.seg[data-cmd="'+cmd+'"] button[aria-pressed="true"]'); return b?(b.dataset.v||b.textContent.trim()):null; };
+        sessionStorage.setItem('ca_cleantab_v1', JSON.stringify({rooms:Array.from(selected), twice:twiceOn,
+          mode:segVal('mode'), fan:segVal('fan'), water:segVal('water'), mop:segVal('mop')}));
+      }catch(e){}
+    }); }
+    var raw; try{ raw=sessionStorage.getItem('ca_cleantab_v1'); sessionStorage.removeItem('ca_cleantab_v1'); }catch(e){ return; }
+    if(!raw) return;
+    var d; try{ d=JSON.parse(raw); }catch(e){ return; }
+    (d.rooms||[]).forEach(function(id){ selected.add(+id); });   // syncSel() (vía applyMap) lo refleja en cuanto lleguen los chips
+    if(d.twice){ twiceOn=true; var tt=document.getElementById('twiceTog'); if(tt)tt.setAttribute('aria-pressed','true'); }
+    ['mode','fan','water','mop'].forEach(function(cmd){
+      var v=d[cmd]; if(!v)return;
+      document.querySelectorAll('.seg[data-cmd="'+cmd+'"] button').forEach(function(b){
+        b.setAttribute('aria-pressed',(b.dataset.v||b.textContent.trim())===v?'true':'false');
+      });
+    });
+  })();
   function hm2min(s){var p=String(s||'0:0').split(':');return (+p[0])*60+(+p[1]);}
   function sendQuiet(){
     var on=document.getElementById('quietTog').getAttribute('aria-pressed')==='true';

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.30.0
+- **Conga 6090: el estado ya no se queda en "desconocido"** (PR #16, gracias @SitoSt). En reposo el
+  6090 manda su estado cada ~5 s como `to_bind` con `control: status` en vez de `report_data`, y se
+  descartaba: sin batería, sin carga y sin mapa activo durante horas.
+- **Mapa nuevo sin guardar en todos los modelos** (issue #17, @SitoSt). Cuando el robot crea un mapa
+  temporal (p. ej. tras perderse en una limpieza corta) repite `noticeSaveMap` hasta que se le
+  responde, y mientras tanto los nombres de las habitaciones se desordenan. Ahora Clean Assistant lo
+  muestra sobre el mapa con **Guardar** (como mapa aparte; no sustituye al actual) o **Descartar**,
+  igual que ya hacía en los legacy. Se registra en el log y el aviso desaparece solo si el robot deja
+  de pedirlo.
+
 ## 0.29.1
 - Modo **Cloud + Local**: el log de los comandos de la app oficial (`[cloud]`) ya no se corta a
   220 caracteres (ahora hasta 4000). Así las capturas incluyen los horarios y habitaciones

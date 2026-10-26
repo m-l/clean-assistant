@@ -570,13 +570,16 @@ def build(action: str, p: dict):
     if action == "voice":        return cmd.set_voice(p["on"], p["volume"])
     if action == "ota":          return cmd.set_upgrade(p["value"])
     if action == "quiet":        return cmd.set_quiet(p["is_open"], p["begin"], p["end"])
-    # solo gen. legacy (3xxx/4xxx), como en Congatudo: ir a un punto, reiniciar el mapa,
-    # guardar/descartar el mapa nuevo pendiente y mapa persistente
-    if action in ("goto", "reset_map", "pending_map", "persistent_map") and not LEGACY:
+    # mapa nuevo pendiente (noticeSaveMap): guardar como mapa aparte o descartar. Ambas gen. (#17)
+    if action == "pending_map":
+        robot.state.pending_map = False
+        return cmd.save_map(is_save=bool(p["save"]))
+    # solo gen. legacy (3xxx/4xxx), como en Congatudo: ir a un punto, reiniciar el mapa y
+    # mapa persistente
+    if action in ("goto", "reset_map", "persistent_map") and not LEGACY:
         raise ValueError(f"'{action}' solo está disponible en los Conga 3xxx/4xxx (backend legacy)")
     if action == "goto":         return {"control": "legacy_goto", "x": float(p["x"]), "y": float(p["y"])}
     if action == "reset_map":    return {"control": "legacy_reset_map"}
-    if action == "pending_map":  return cmd.save_map(is_save=bool(p["save"]))
     if action == "persistent_map": return {"control": "legacy_persistent_map", "value": bool(p["value"])}
     raise ValueError(f"acción desconocida: {action}")
 
@@ -873,6 +876,7 @@ async def lifespan(app: FastAPI):
                     _new_map["moved"] = False
                     try:
                         robot.command(cmd.save_map())     # setSaveMap: conserva el mapa recién creado
+                        robot.state.pending_map = False   # responde también a su noticeSaveMap
                         print("[mapa] mapeo completado -> setSaveMap (guardar mapa nuevo)")
                         # espera el id del mapa nuevo para ponerle el nombre que eligió el usuario
                         _new_map["awaiting"] = True
@@ -1025,7 +1029,7 @@ async def lifespan(app: FastAPI):
     mqtt.stop()
 
 
-app = FastAPI(title="Clean Assistant", version="0.29.1", lifespan=lifespan)
+app = FastAPI(title="Clean Assistant", version="0.30.0", lifespan=lifespan)
 
 
 @app.get("/api/state")

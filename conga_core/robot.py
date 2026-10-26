@@ -40,6 +40,7 @@ class RealRobot:
         self._trail_last = None        # último punto de la traza (para el umbral de movimiento)
         self._trail_map = None         # map_head_id de la traza (reinicia al cambiar de mapa)
         self._last_fault_log = 0        # último faultCode ya registrado en el log (para no repetir)
+        self._save_notice_ts = 0.0     # último noticeSaveMap: el robot pide guardar un mapa nuevo (#17)
         self.orders = []               # horarios REALES guardados en el robot (getOrder6090)
         self.on_update = None          # callback opcional (estado -> push)
         self.on_map = None             # callback opcional (mapa -> push)
@@ -82,8 +83,15 @@ class RealRobot:
             self.log(f"  [!] error enviando al robot: {e}")
             return {"ok": False, "error": str(e)}
 
+    # el robot repite noticeSaveMap cada ~5 s mientras tiene un mapa nuevo sin guardar (#17)
+    SAVE_NOTICE_TIMEOUT_S = 30
+
     def tick(self) -> RobotState:
-        return self.state    # el estado real llega por report_data, no por tick
+        # el estado real llega por report_data; aquí solo caduca el aviso de mapa pendiente
+        if self.state.pending_map and time.time() - self._save_notice_ts > self.SAVE_NOTICE_TIMEOUT_S:
+            self.state.pending_map = False
+            self._notify()
+        return self.state
 
     # ---------------- servidor ----------------
     def _ensure_certs(self):
@@ -679,6 +687,16 @@ class RealRobot:
             self.state.voice = {"voiceMode": data.get("voiceMode", 1),
                                 "volume": data.get("volume", 10)}
             changed = True
+        elif ctrl == "noticeSaveMap":
+            # mapa nuevo TEMPORAL sin guardar (p. ej. tras perderse en una limpieza corta). Mientras
+            # no se responde, el robot trabaja sobre él y los nombres de habitación se desordenan.
+            # Lo decide el usuario (Guardar = mapa aparte, NO sustituye al actual; Descartar). #17
+            self._save_notice_ts = time.time()
+            if not self.state.pending_map:
+                self.state.pending_map = True
+                self.log(f"  [mapa] el robot tiene un mapa nuevo sin guardar (noticeSaveMap "
+                         f"{data.get('mapType')}) -> Guardar o Descartar en el mapa")
+                changed = True
         elif ctrl in ("get_preference", "set_preference") and data.get("ctrltype") == 16:
             self.state.collect_freq = data.get("value")   # frecuencia de autovaciado
             changed = True

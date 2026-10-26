@@ -336,7 +336,7 @@
   <div class="stage">
     <section class="card mapcard">
       <div class="maphead"><span class="chiplbl mtitle" id="mapTitle">—</span><span class="mapsub"><span class="chiplbl" id="mapState"></span><span class="chiplbl" id="mapStats"></span><span class="chiplbl warn" id="mapWarn"></span></span></div>
-      <div class="mapnote onlylegacy" id="pendMap" hidden><span>El robot tiene un mapa nuevo sin guardar.</span><button class="btn" id="pendSave">Guardar</button><button class="btn ghost" id="pendDrop">Descartar</button></div>
+      <div class="mapnote" id="pendMap" hidden><span>El robot tiene un mapa nuevo sin guardar.</span><button class="btn" id="pendSave">Guardar</button><button class="btn ghost" id="pendDrop">Descartar</button></div>
       <div class="mapnote onlylegacy" id="gotoNote" hidden><span>Toca en el mapa el punto al que quieres enviar el robot.</span><button class="btn ghost" id="gotoCancel">Cancelar</button></div>
       <div class="mapctl">
         <button class="iconbtn" id="rotL" title="Girar 90° a la izquierda" aria-label="Girar izquierda">↺</button>
@@ -923,6 +923,7 @@
   "Ciclos de carga":{en:"Charge cycles",pt:"Ciclos de carga",fr:"Cycles de charge",pl:"Cykle ładowania",de:"Ladezyklen",it:"Cicli di carica",nl:"Laadcycli",ca:"Cicles de càrrega"},
   "Salud estimada":{en:"Estimated health",pt:"Saúde estimada",fr:"Santé estimée",pl:"Szacowany stan",de:"Geschätzter Zustand",it:"Salute stimata",nl:"Geschatte conditie",ca:"Salut estimada"},
   "Consumo al limpiar":{en:"Drain while cleaning",pt:"Consumo ao limpar",fr:"Consommation en nettoyage",pl:"Zużycie podczas sprzątania",de:"Verbrauch beim Reinigen",it:"Consumo in pulizia",nl:"Verbruik tijdens schoonmaken",ca:"Consum en netejar"},
+  "¿Guardar el mapa nuevo? Se guarda como un mapa aparte y pasa a ser el activo; el que tenías se conserva en la lista.":{en:"Save the new map? It's saved as a separate map and becomes the active one; your current map stays in the list.",pt:"Guardar o novo mapa? É guardado como um mapa à parte e passa a ser o ativo; o que tinhas fica na lista.",fr:"Enregistrer la nouvelle carte ? Elle est enregistrée à part et devient la carte active ; l'ancienne reste dans la liste.",pl:"Zapisać nową mapę? Zostanie zapisana jako osobna mapa i stanie się aktywna; obecna mapa pozostanie na liście.",de:"Neue Karte speichern? Sie wird als eigene Karte gespeichert und wird aktiv; deine bisherige Karte bleibt in der Liste.",it:"Salvare la nuova mappa? Viene salvata come mappa a parte e diventa quella attiva; quella attuale resta nell'elenco.",nl:"Nieuwe kaart opslaan? Hij wordt als aparte kaart opgeslagen en wordt de actieve; je huidige kaart blijft in de lijst.",ca:"Desar el mapa nou? Es desa com un mapa a part i passa a ser l'actiu; el que tenies es conserva a la llista."},
   "Sensores":{en:"Sensors",pt:"Sensores",fr:"Capteurs",pl:"Czujniki",de:"Sensoren",it:"Sensori",nl:"Sensoren",ca:"Sensors"},
   "Limpia los sensores cada {limit} h de trabajo. Llevas {hours} h.":{en:"Clean the sensors every {limit} h of work. Current: {hours} h.",pt:"Limpe os sensores a cada {limit} h de trabalho. Leva {hours} h.",fr:"Nettoyez les capteurs toutes les {limit} h de travail. Actuellement : {hours} h.",pl:"Czyść czujniki co {limit} h pracy. Obecnie: {hours} h.",de:"Sensoren alle {limit} h Betrieb reinigen. Bisher: {hours} h.",it:"Pulisci i sensori ogni {limit} h di lavoro. Finora: {hours} h.",nl:"Reinig de sensoren elke {limit} u werk. Nu: {hours} u.",ca:"Neteja els sensors cada {limit} h de treball. Portes {hours} h."},
   "Pulsa cuando hayas limpiado los sensores":{en:"Press after cleaning the sensors",pt:"Prima depois de limpar os sensores",fr:"Appuyez après avoir nettoyé les capteurs",pl:"Naciśnij po wyczyszczeniu czujników",de:"Nach dem Reinigen der Sensoren drücken",it:"Premi dopo aver pulito i sensori",nl:"Druk na het reinigen van de sensoren",ca:"Prem quan hagis netejat els sensors"},
@@ -1386,7 +1387,9 @@
   // imagen del mapa por MQTT: la base se publica siempre (solo al cambiar); esto añade robot + recorrido
   wireToggle('mapLiveTog',function(on){fetch(BASE+'api/prefs/map_image_live',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:on})});});
   // ---- solo gen. legacy: mapa nuevo pendiente, reiniciar mapa e "ir aquí" (como Congatudo) ----
-  document.getElementById('pendSave').addEventListener('click',function(){ document.getElementById('pendMap').hidden=true; api('pending_map',{save:true}); });
+  document.getElementById('pendSave').addEventListener('click',async function(){
+    if(await uiConfirm(t('¿Guardar el mapa nuevo? Se guarda como un mapa aparte y pasa a ser el activo; el que tenías se conserva en la lista.'))){ document.getElementById('pendMap').hidden=true; api('pending_map',{save:true}); }
+  });
   document.getElementById('pendDrop').addEventListener('click',async function(){
     if(await uiConfirm(t('¿Descartar el mapa nuevo? El robot seguirá con el que tenía.'))){ document.getElementById('pendMap').hidden=true; api('pending_map',{save:false}); }
   });

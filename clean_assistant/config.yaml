@@ -1,12 +1,14 @@
-name: "Clean Assistant"
-version: "0.30.0"
+name: "Clean Assistant (fork build)"
+version: "0.30.0-dev"
 slug: "clean_assistant"
 description: "Local (no-cloud) control for Cecotec Conga (8090 / 6090 / 7090 / 4690 / 9090 Ultra and more; 3090/4090 experimental): live map, room cleaning, zones, schedules, MQTT & Home Assistant."
-url: "https://github.com/miguelsg29/clean-assistant"
-# Imagen PRECOMPILADA (GitHub Actions -> GHCR). Con esto Home Assistant DESCARGA la imagen en vez
-# de compilarla en el dispositivo: actualizaciones rápidas y con barra de progreso. La publica el
-# workflow .github/workflows/build.yml en cada tag. {arch} lo sustituye el Supervisor.
-image: "ghcr.io/miguelsg29/clean-assistant-{arch}"
+url: "https://github.com/m-l/clean-assistant"
+# NOTA LOCAL (no subir al PR a upstream): sin `image:`, el Supervisor COMPILA el add-on en el
+# propio dispositivo a partir del Dockerfile de esta carpeta (que a su vez clona mi fork, ver
+# Dockerfile) en lugar de descargar la imagen precompilada de GHCR. Es más lento de instalar
+# (unos minutos) pero no depende de ninguna imagen publicada. Para volver al comportamiento de
+# upstream: restaurar la línea `image: "ghcr.io/miguelsg29/clean-assistant-{arch}"` de abajo.
+# image: "ghcr.io/miguelsg29/clean-assistant-{arch}"
 arch:
   - aarch64
   - amd64

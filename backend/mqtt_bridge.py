@@ -134,6 +134,15 @@ class MqttBridge:
         self._battery_last = None
         self.lang_provider = None       # callback -> código de idioma ('es','en',...), ver backend/i18n.py
         self._opt_reverse = {}          # {clave select: {opción traducida -> clave canónica}}, por idioma actual
+        self.ha_notify_provider = None  # callback(connected: bool) -> avisa a HA de la propia
+                                         # conexión MQTT de la app (distinto de la disponibilidad
+                                         # del ROBOT, que ya lleva su propio margen -- ver
+                                         # _update_availability). Sin margen: un automatismo que
+                                         # observe la entidad de disponibilidad no se entera si la
+                                         # app se cae y reconecta rápido; esto avisa al instante.
+        self._mqtt_was_up = False       # para no avisar "restablecida" en la primera conexión
+        self._mqtt_ever_connected = False  # distingue "primer arranque" de "reconexión tras caída"
+        self._stopping = False          # True durante stop(): no avisar de una desconexión buscada
         self.disc = "homeassistant"
         self.client = None
         # preferencias "para la próxima limpieza" (sombra local: el robot no las reporta)
@@ -205,12 +214,14 @@ class MqttBridge:
             self.client.username_pw_set(self.user, self.password or None)
         self.client.will_set(self.t_avail, "offline", retain=True)
         self.client.on_connect = self._on_connect
+        self.client.on_disconnect = self._on_disconnect
         self.client.on_message = self._on_message
         self.client.connect_async(self.host, self.port, 60)
         self.client.loop_start()
         self.log(f"[MQTT] puente HA activo -> {self.host}:{self.port}")
 
     def stop(self):
+        self._stopping = True           # distingue esta desconexión buscada de una caída real
         if self._avail_timer is not None:
             self._avail_timer.cancel()
             self._avail_timer = None
@@ -749,6 +760,16 @@ class MqttBridge:
         if rc != 0:
             self.log("  [!] rc!=0: revisa credenciales/host del broker")
             return
+        # avisa a HA (persistent_notification) si esto es una RECONEXIÓN tras una caída real de
+        # la propia conexión MQTT de la app (no la primera conexión al arrancar) -- ver stop()/
+        # _on_disconnect() y ha_notify_provider más arriba.
+        if self._mqtt_ever_connected and not self._mqtt_was_up and self.ha_notify_provider:
+            try:
+                self.ha_notify_provider(True)
+            except Exception as e:
+                self.log(f"  [MQTT] error avisando a HA de la reconexión: {e}")
+        self._mqtt_was_up = True
+        self._mqtt_ever_connected = True
         node = self.node
         client.publish(self.t_cmd, "", retain=True)      # limpia comandos retained viejos
         for sub in (self.t_cmd, "homeassistant/status",
@@ -765,6 +786,22 @@ class MqttBridge:
                     f"{self.disc}/switch/+/config", f"{self.disc}/button/+/config"):
             client.subscribe(sub)
         self.publish_discovery()
+
+    def _on_disconnect(self, client, userdata, *args):
+        """Paho dispara esto tanto si la app llama a disconnect() (ver stop()) como si la
+        conexión se CAE de verdad (red, broker reiniciado, etc.) -- la firma varía entre la
+        API v1 y v2 de paho, así que se acepta *args sin interpretarlo, solo para saber que
+        ha ocurrido. Avisa a HA (persistent_notification) solo en el segundo caso: una app que
+        se para a propósito (reinicio del add-on, actualización) no debería generar un aviso."""
+        self.log("[MQTT] desconectado del broker")
+        if self._stopping or not self._mqtt_was_up:
+            return                       # desconexión buscada, o ya sabíamos que estaba caída
+        self._mqtt_was_up = False
+        if self.ha_notify_provider:
+            try:
+                self.ha_notify_provider(False)
+            except Exception as e:
+                self.log(f"  [MQTT] error avisando a HA de la caída: {e}")
 
     def _cmd(self, control):
         """Envía un objeto control al robot (misma vía que la web)."""

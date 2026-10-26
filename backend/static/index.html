@@ -2027,8 +2027,9 @@
             .then(function(r){return r.json();}).then(function(res){ if(res.zones){ZONES=res.zones;renderZones();} renderRealMap(); });
         } else {
           exitDraw();
-          // se crea con el nombre por defecto; se puede renombrar en línea en la lista
-          fetch(BASE+'api/zones/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:kind,points:pts,name:ZK[kind].l})})
+          // se crea con el nombre por defecto (en el idioma actual de la interfaz); se puede
+          // renombrar en línea en la lista
+          fetch(BASE+'api/zones/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({kind:kind,points:pts,name:t(ZK[kind].l)})})
             .then(function(r){return r.json();}).then(function(res){ if(res.zones){ZONES=res.zones;renderZones();} renderRealMap(); });
         }
       } else { exitDraw(); renderRealMap(); }

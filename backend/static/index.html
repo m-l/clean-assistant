@@ -574,6 +574,21 @@
         <div class="phead" style="margin-top:18px">Batería</div>
         <p class="hint" style="opacity:.65;font-size:11.5px;margin:0 0 6px">Estimación de Clean Assistant a partir de las limpiezas y cargas que va viendo.</p>
         <div id="batHealth"></div>
+
+        <div class="phead" style="margin-top:18px;color:var(--critical)">Zona de peligro</div>
+        <p class="hint" style="opacity:.65;font-size:11.5px;margin:0 0 6px">Cambia el idioma de los nombres de entidad y las opciones que Clean Assistant publica por MQTT en Home Assistant. Es independiente del idioma de esta interfaz (arriba). Las tarjetas Lovelace y automatizaciones que referencien el nombre de una entidad, o el texto exacto de una opción (por ejemplo del selector de potencia), pueden dejar de funcionar al cambiar esto.</p>
+        <div class="field"><label>Idioma de entidades (Home Assistant)</label>
+          <select id="entityLangSel" class="tinput" style="border-color:var(--critical)">
+            <option value="es">Español</option>
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+            <option value="it">Italiano</option>
+            <option value="fr">Français</option>
+            <option value="pt">Português</option>
+            <option value="nl">Nederlands</option>
+            <option value="ca">Català</option>
+            <option value="pl">Polski</option>
+          </select></div>
       </div>
     </section>
   </div>
@@ -1402,6 +1417,19 @@
   document.getElementById('cleanAll').addEventListener('click',function(){api('clean_all');});
   document.getElementById('dustBtn').addEventListener('click',function(){api('dust');});
   document.getElementById('dustFreq').addEventListener('change',function(){api('dust_freq',{value:+this.value});});
+  document.getElementById('entityLangSel').addEventListener('change',async function(){
+    var sel=this, prev=sel.getAttribute('data-prev')||'es', next=sel.value;
+    if(next===prev) return;
+    var ok=await uiConfirm(t('Vas a cambiar el idioma de las entidades que Clean Assistant publica en Home Assistant. Esto puede romper tarjetas Lovelace y automatizaciones que usen el nombre actual de una entidad, o el texto exacto de una opción (por ejemplo del selector de potencia o del modo de limpieza). ¿Continuar?'),t('Zona de peligro'));
+    if(!ok){ sel.value=prev; return; }
+    sel.disabled=true;
+    fetch(BASE+'api/prefs/lang',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({value:next})})
+      .then(function(r){return r.json();}).then(function(res){
+        sel.disabled=false;
+        if(res&&res.ok){ sel.setAttribute('data-prev',next); }
+        else { sel.value=prev; uiAlert(t('No se pudo cambiar el idioma de las entidades.')); }
+      }).catch(function(){ sel.disabled=false; sel.value=prev; uiAlert(t('No se pudo cambiar el idioma de las entidades.')); });
+  });
 
   // segmentos con comando
   document.querySelectorAll('.seg').forEach(function(seg){
@@ -2559,6 +2587,7 @@
     if(ver&&info.version) ver.textContent='v'+info.version;
     if(info.backend==='legacy') document.body.classList.add('legacy');   // Conga 3xxx/4xxx
     var ml=document.getElementById('mapLiveTog'); if(ml) ml.setAttribute('aria-pressed',!!info.map_image_live);
+    var el=document.getElementById('entityLangSel'); if(el&&info.lang){ el.value=info.lang; el.setAttribute('data-prev',info.lang); }
   }).catch(function(){});
   connect();
 })();

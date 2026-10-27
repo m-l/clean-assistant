@@ -96,6 +96,8 @@ clients: set[WebSocket] = set()
 zones = ZoneStore(_data("zones.json"))       # zonas de Clean Assistant (persistentes)
 schedules = ScheduleStore(_data("schedules.json"))   # horarios (persistentes)
 schedules.project_type = lambda: getattr(getattr(robot, "cfg", None), "project_type", None)
+if hasattr(robot, "rooms_meta"):
+    robot.rooms_meta = lambda: _rooms_meta()
 house_maps = MapStore(_data("maps.json"))    # mapas de la casa vistos (para listar/cambiar)
 history = HistoryStore(_data("history.json"))   # registro de actividad (historial de limpiezas)
 battery_health = BatteryHealth(_data("battery_health.json"))   # ciclos, consumo, carga y salud
@@ -1000,8 +1002,10 @@ async def lifespan(app: FastAPI):
     robot.on_pose = lambda: asyncio.run_coroutine_threadsafe(broadcast_pose(), loop)
     def on_orders():
         asyncio.run_coroutine_threadsafe(broadcast_orders(), loop)
-        # sincroniza CA <-> robot (importa los del robot que falten, sube los de CA que falten)
-        if _reconcile_schedules():
+        # sincroniza CA <-> robot (importa los del robot que falten, sube los de CA que falten).
+        # Legacy: los del robot solo se MUESTRAN; los ejecuta el propio robot y, si se importaran,
+        # Clean Assistant los lanzaría también (_run_due_schedules_legacy) -> doble limpieza.
+        if not LEGACY and _reconcile_schedules():
             asyncio.run_coroutine_threadsafe(broadcast_schedules(), loop)
     robot.on_orders = on_orders
     robot.on_provision = on_provision
@@ -1030,7 +1034,7 @@ async def lifespan(app: FastAPI):
     mqtt.stop()
 
 
-app = FastAPI(title="Clean Assistant", version="0.30.1", lifespan=lifespan)
+app = FastAPI(title="Clean Assistant", version="0.31.0", lifespan=lifespan)
 
 
 @app.get("/api/state")

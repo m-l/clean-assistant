@@ -42,6 +42,8 @@ class RealRobot:
         self._last_fault_log = 0        # último faultCode ya registrado en el log (para no repetir)
         self._save_notice_ts = 0.0     # último noticeSaveMap: el robot pide guardar un mapa nuevo (#17)
         self.orders = []               # horarios REALES guardados en el robot (getOrder6090)
+        self.rooms_meta = lambda: {}   # {room_id: {name,type,material}} (app.py lo enlaza al mapa)
+        self._oneoff = None            # horario inmediato pendiente de borrar {orderid, ts, started}
         self.on_update = None          # callback opcional (estado -> push)
         self.on_map = None             # callback opcional (mapa -> push)
         self.on_pose = None            # callback opcional (solo pose -> push ligero)
@@ -69,6 +71,12 @@ class RealRobot:
 
     def command(self, control: dict) -> dict:
         """Envía un objeto `control` al robot (envuelto en to_bind)."""
+        if (control.get("control") == "setRoomClean" and control.get("ctrlValue") == 1
+                and self.cfg.project_type in cmd.ROOMS_AS_ORDER and self.state.map_head_id):
+            control = cmd.immediate_order(control.get("roomsID") or [], self.state.map_head_id,
+                                          self.rooms_meta(), self.cfg.project_type)
+            self._oneoff = {"orderid": control["order"]["orderid"], "ts": time.time(), "started": False}
+            self.log("  [robot] este modelo limpia habitaciones con un horario inmediato (como su app)")
         with self._lock:
             sock = self._sock
         if not sock:
@@ -91,7 +99,26 @@ class RealRobot:
         if self.state.pending_map and time.time() - self._save_notice_ts > self.SAVE_NOTICE_TIMEOUT_S:
             self.state.pending_map = False
             self._notify()
+        self._cleanup_oneoff()
         return self.state
+
+    ONEOFF_START_TIMEOUT_S = 300
+
+    def _cleanup_oneoff(self):
+        """Borra el horario inmediato cuando la limpieza termina (o si no arrancó en 5 min), para
+        que no se quede en la lista ni se repita."""
+        o = self._oneoff
+        if not o:
+            return
+        st = self.state.state
+        if st in ("cleaning", "paused", "returning"):
+            o["started"] = True
+            return
+        if o["started"] or time.time() - o["ts"] > self.ONEOFF_START_TIMEOUT_S:
+            if not o["started"]:
+                self.log("  [robot] la limpieza por habitaciones no arrancó en 5 min; se retira el horario")
+            self._oneoff = None
+            self.command(cmd.delete_order(o["orderid"]))
 
     # ---------------- servidor ----------------
     def _ensure_certs(self):

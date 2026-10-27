@@ -329,8 +329,12 @@ class RealRobot:
         ctrl = d.get("control") if isinstance(d, dict) else None
         if not self._provisioned and isinstance(d, dict):
             self._capture({"did": d.get("did"), "userid": d.get("userid")})
-        if ctrl in ("get_quiet", "get_consumables", "get_upgrade_config",
-                    "get_voice", "getOrder6090", "get_preference", "set_preference"):
+        # las consultas (get*) solo valen como RESPUESTA del robot: la petición de la nube (p. ej.
+        # getOrder6090 sin "orders") se tomaba como respuesta vacía y los horarios parpadeaban 0/1 (#14)
+        is_query = str(ctrl).startswith("get")
+        if (direction == "robot->nube" or not is_query) and ctrl in (
+                "get_quiet", "get_consumables", "get_upgrade_config",
+                "get_voice", "getOrder6090", "get_preference", "set_preference"):
             try:
                 self._parse_ack(d)   # no molestar/consumibles/voz/horarios/frecuencia autovaciado
             except Exception:

@@ -95,6 +95,7 @@ else:
 clients: set[WebSocket] = set()
 zones = ZoneStore(_data("zones.json"))       # zonas de Clean Assistant (persistentes)
 schedules = ScheduleStore(_data("schedules.json"))   # horarios (persistentes)
+schedules.project_type = lambda: getattr(getattr(robot, "cfg", None), "project_type", None)
 house_maps = MapStore(_data("maps.json"))    # mapas de la casa vistos (para listar/cambiar)
 history = HistoryStore(_data("history.json"))   # registro de actividad (historial de limpiezas)
 battery_health = BatteryHealth(_data("battery_health.json"))   # ciclos, consumo, carga y salud
@@ -1029,7 +1030,7 @@ async def lifespan(app: FastAPI):
     mqtt.stop()
 
 
-app = FastAPI(title="Clean Assistant", version="0.30.0", lifespan=lifespan)
+app = FastAPI(title="Clean Assistant", version="0.30.1", lifespan=lifespan)
 
 
 @app.get("/api/state")

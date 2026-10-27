@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.30.1
+- **Conga 3890: los horarios ya no piden la mopa** (issue #14, @Here87). La app oficial del 3890 manda
+  `cleanmode`/`sweep_mode` = 3 para "Auto"; Clean Assistant mandaba 0 (el "Auto" del 8090) y el 3890
+  lo tomaba como un modo con mopa (fault 522). Ahora se usa el valor de cada modelo.
+- **Cloud + Local: la lista de horarios ya no parpadea.** La *petición* `getOrder6090` de la nube se
+  tomaba como una respuesta vacía del robot ("horarios guardados: 0" / "1"). Ahora las consultas solo
+  se leen cuando las contesta el robot.
+
 ## 0.30.0
 - **Conga 6090: el estado ya no se queda en "desconocido"** (PR #16, gracias @SitoSt). En reposo el
   6090 manda su estado cada ~5 s como `to_bind` con `control: status` en vez de `report_data`, y se

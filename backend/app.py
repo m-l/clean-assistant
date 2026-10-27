@@ -96,6 +96,7 @@ else:
 clients: set[WebSocket] = set()
 zones = ZoneStore(_data("zones.json"))       # zonas de Clean Assistant (persistentes)
 schedules = ScheduleStore(_data("schedules.json"))   # horarios (persistentes)
+schedules.project_type = lambda: getattr(getattr(robot, "cfg", None), "project_type", None)
 house_maps = MapStore(_data("maps.json"))    # mapas de la casa vistos (para listar/cambiar)
 history = HistoryStore(_data("history.json"))   # registro de actividad (historial de limpiezas)
 battery_health = BatteryHealth(_data("battery_health.json"))   # ciclos, consumo, carga y salud
@@ -1042,7 +1043,7 @@ async def lifespan(app: FastAPI):
 # Supervisor) y hay que subirlo a mano junto a esa -- llevaba desde 0.30.0 sin tocarse pese a
 # muchos bumps de config.yaml, lo que hacía que el pie de la web (appVer) pareciera confirmar una
 # versión vieja incluso cuando el add-on sí tenía código nuevo. Mantenerlos sincronizados.
-app = FastAPI(title="Clean Assistant", version="0.30.5", lifespan=lifespan)
+app = FastAPI(title="Clean Assistant", version="0.30.7", lifespan=lifespan)
 
 
 @app.get("/api/state")

@@ -115,6 +115,7 @@ class ScheduleStore:
     def __init__(self, path: str = "schedules.json"):
         self.path = path
         self.plans: list[dict] = []
+        self.project_type = lambda: None   # modelo del robot (app.py lo enlaza a la config)
         self._load()
 
     def _load(self):
@@ -182,7 +183,8 @@ class ScheduleStore:
     def order_command(self, plan: dict, map_head_id: int, rooms_meta=None):
         # el horario se guarda en SU mapa (mapid del plan), no en el activo
         mid = plan.get("mapid") or map_head_id
-        return cmd.build_order(plan, mid, rooms_meta, plan.get("enable", True))
+        return cmd.build_order(plan, mid, rooms_meta, plan.get("enable", True),
+                               project_type=self.project_type())
 
     def delete_command(self, plan: dict):
         return cmd.delete_order(cmd._order_id(plan))

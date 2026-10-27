@@ -279,21 +279,27 @@ def _order_id(plan) -> int:
     return 1700000000 + (h % 89999999)
 
 
-def build_order(plan, map_head_id, rooms_meta=None, enable=None):
+# modo de limpieza de cada habitación en un horario (cleanmode/sweep_mode). En el 8090 "Auto" es 0;
+# en el 3890 la app oficial manda 3 para "Auto" y con 0 el robot espera la mopa (fault 522, #14)
+ORDER_CLEANMODE = {"CECOTECCRL20S-1001": 3}
+
+
+def build_order(plan, map_head_id, rooms_meta=None, enable=None, project_type=None):
     """plan: {id,name,time,days,rooms:[{room,fan,water,mop,twice}]}."""
     rooms_meta = rooms_meta or {}
+    mode = ORDER_CLEANMODE.get(project_type, 0)
     room_per = []
     for r in plan.get("rooms", []):
         rid = int(r["room"])
         meta = rooms_meta.get(rid, {})
         room_per.append({
             "material_type": meta.get("material", 2),
-            "room_id": rid, "sweep_mode": 0, "room_name": meta.get("name", ""),
+            "room_id": rid, "sweep_mode": mode, "room_name": meta.get("name", ""),
             "waterlevel": _lvl(WATER, r.get("water", "Medio")),
             "windpower": _lvl(FAN, r.get("fan", "Normal")),
             "carpet": 0, "twiceclean": 1 if r.get("twice") else 0,
             "shake_shift": _lvl(MOP, r.get("mop", "Estándar")),
-            "cleanmode": 0, "room_type": meta.get("type", 0),
+            "cleanmode": mode, "room_type": meta.get("type", 0),
         })
     en = plan.get("enable", True) if enable is None else enable
     # la hora/días del plan están en LOCAL; el robot los guarda en UTC (como la nube)

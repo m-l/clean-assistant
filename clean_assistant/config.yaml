@@ -56,6 +56,7 @@ options:
   DEFAULT_FAN: "Normal"
   DEFAULT_WATER: "Medio"
   DEFAULT_MOP: "Estándar"
+  DEFAULT_MODE: "Auto"
 schema:
   BACKEND: list(new|legacy)
   ROBOT_DID: int
@@ -72,3 +73,4 @@ schema:
   DEFAULT_FAN: list(Off|Eco|Normal|Turbo)
   DEFAULT_WATER: list(Off|Bajo|Medio|Alto)
   DEFAULT_MOP: list(Off|Estándar|Fuerte|Potente)
+  DEFAULT_MODE: list(Auto|Fregado|Bordes|Espiral)

@@ -149,7 +149,7 @@ class MqttBridge:
         self.prefs = {
             "fan": env("DEFAULT_FAN", "Normal"), "water": env("DEFAULT_WATER", "Medio"),
             "mop": env("DEFAULT_MOP", "Estándar"), "twice": False,
-            "mode": "Auto", "base_type": "Base de carga", "turbo_carpet": False,
+            "mode": env("DEFAULT_MODE", "Auto"), "base_type": "Base de carga", "turbo_carpet": False,
         }
         self.t_state = f"conga/{self.node}/state"
         self.t_cmd = f"conga/{self.node}/command"
@@ -549,6 +549,11 @@ class MqttBridge:
             self._pub(f"conga/{node}/turbo_carpet", "on" if v else "off")
         elif action == "dust_freq":
             self._pub_dust_freq()   # el estado ya está en robot.state.collect_freq
+            return
+        # persiste también cuando el cambio viene de la propia web (antes solo quedaba en
+        # memoria: se perdía al reiniciar el add-on, igual que por MQTT -- ver _on_message)
+        if self._persist:
+            self._persist()
 
     def _current_room_name(self):
         """Nombre de la habitación que el robot limpia AHORA (cleaning_roomId), o '—' si no
@@ -892,8 +897,11 @@ class MqttBridge:
                     self.prefs["base_type"] = canon
                     self.robot.state.base_type = canon
                     self._cmd(cmd.base_type(canon))
-                    if self._persist:
-                        self._persist()
+                # se guarda para la próxima limpieza Y para que sobreviva a un reinicio del
+                # add-on (antes solo "base_type" persistía; fan/water/mop/mode volvían siempre
+                # a su valor por defecto al reiniciar)
+                if key in ("fan", "water", "mop", "mode", "base_type") and self._persist:
+                    self._persist()
                 self._pub(f"conga/{node}/pref/{key}", payload)
                 return
 

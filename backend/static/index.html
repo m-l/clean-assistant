@@ -1288,6 +1288,24 @@
     // tipo de base: refleja la preferencia guardada en el segmento
     if(st.base_type){ document.querySelectorAll('.seg[data-cmd="base_type"] button').forEach(function(b){
       b.setAttribute('aria-pressed', b.dataset.v===st.base_type ? 'true':'false'); }); }
+    // modo/succión/agua/mopa + doble pasada/turbo en alfombras: el backend ahora guarda la
+    // última preferencia usada (antes volvían siempre a Auto/Normal/Medio/Estándar al recargar
+    // la página o reiniciar el add-on -- ver mqtt.prefs en mqtt_bridge.py). Cada pulsación de
+    // estos segmentos ya manda el comando al momento (no es un formulario a medio rellenar, a
+    // diferencia de voz/aviso silencioso), así que reflejar aquí el estado del servidor en cada
+    // actualización es seguro y mantiene sincronizadas varias pestañas/dispositivos a la vez.
+    if(st.prefs){
+      ['mode','fan','water','mop'].forEach(function(cmd){
+        var v=st.prefs[cmd]; if(!v)return;
+        document.querySelectorAll('.seg[data-cmd="'+cmd+'"] button').forEach(function(b){
+          b.setAttribute('aria-pressed',(b.dataset.v||b.textContent.trim())===v?'true':'false');
+        });
+      });
+      if(st.prefs.twice!=null){ twiceOn=!!st.prefs.twice;
+        var tt=document.getElementById('twiceTog'); if(tt)tt.setAttribute('aria-pressed',twiceOn?'true':'false'); }
+      if(st.prefs.turbo_carpet!=null){
+        var ct=document.getElementById('carpetTog'); if(ct)ct.setAttribute('aria-pressed',st.prefs.turbo_carpet?'true':'false'); }
+    }
     // frecuencia de vaciado: refleja el valor conocido; si aún no se sabe, por defecto "tras cada
     // limpieza" cuando hay colector automático (y "Nunca" con base de carga simple).
     var df=document.getElementById('dustFreq');

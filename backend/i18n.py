@@ -240,6 +240,273 @@ STR: dict[str, dict[str, str]] = {
                                "fr": "Fréquence de vidage", "pl": "Częstotliwość opróżniania",
                                "de": "Entleerungshäufigkeit", "it": "Frequenza di svuotamento",
                                "nl": "Legingsfrequentie", "ca": "Freqüència de buidatge"},
+
+    # — mensajes de aviso/fallo del robot (WARN_MESSAGES en conga_core/state.py, también usado
+    #   por conga_core/legacy/robot.py): es el VALOR publicado del sensor "Conga Aviso", no solo
+    #   su nombre, así que sin esto se quedaba en español pasara lo que pasara con el idioma de
+    #   entidades (ver mqtt_bridge.py publish_discovery/publish_state) —
+    "Láser bloqueado: retira lo que lo obstruya": {
+        "en": "Laser blocked: remove whatever's covering it",
+        "pt": "Laser bloqueado: retira o que o esteja a obstruir",
+        "fr": "Laser bloqué : retirez ce qui l'obstrue", "pl": "Laser zablokowany: usuń przeszkodę",
+        "de": "Laser blockiert: Entferne das Hindernis", "it": "Laser bloccato: rimuovi ciò che lo ostruisce",
+        "nl": "Laser geblokkeerd: verwijder wat hem blokkeert", "ca": "Làser bloquejat: retira el que l'obstrueixi"},
+    "Rueda en el aire: coloca el robot en el suelo": {
+        "en": "Wheel off the ground: place the robot on the floor",
+        "pt": "Roda no ar: coloca o robô no chão", "fr": "Roue dans le vide : posez le robot au sol",
+        "pl": "Koło w powietrzu: postaw robota na podłodze",
+        "de": "Rad in der Luft: Setze den Roboter auf den Boden",
+        "it": "Ruota sollevata: appoggia il robot a terra", "nl": "Wiel in de lucht: zet de robot op de grond",
+        "ca": "Roda enlaire: posa el robot a terra"},
+    "Batería baja: carga el robot": {
+        "en": "Low battery: charge the robot", "pt": "Bateria fraca: carrega o robô",
+        "fr": "Batterie faible : rechargez le robot", "pl": "Niski poziom baterii: naładuj robota",
+        "de": "Akku schwach: Roboter aufladen", "it": "Batteria scarica: ricarica il robot",
+        "nl": "Batterij bijna leeg: laad de robot op", "ca": "Bateria baixa: carrega el robot"},
+    "Coloca el depósito de suciedad y el filtro HEPA": {
+        "en": "Fit the dust bin and the HEPA filter", "pt": "Coloca o depósito de sujidade e o filtro HEPA",
+        "fr": "Installez le bac à poussière et le filtre HEPA",
+        "pl": "Zamontuj pojemnik na kurz i filtr HEPA", "de": "Staubbehälter und HEPA-Filter einsetzen",
+        "it": "Inserisci il contenitore della polvere e il filtro HEPA",
+        "nl": "Plaats het stofreservoir en het HEPA-filter",
+        "ca": "Col·loca el dipòsit de brutícia i el filtre HEPA"},
+    "Campo magnético fuerte: cambia el robot de sitio": {
+        "en": "Strong magnetic field: move the robot elsewhere",
+        "pt": "Campo magnético forte: muda o robô de sítio", "fr": "Champ magnétique fort : déplacez le robot",
+        "pl": "Silne pole magnetyczne: przenieś robota w inne miejsce",
+        "de": "Starkes Magnetfeld: Roboter an einen anderen Ort stellen",
+        "it": "Campo magnetico forte: sposta il robot altrove", "nl": "Sterk magnetisch veld: verplaats de robot",
+        "ca": "Camp magnètic fort: canvia el robot de lloc"},
+    "Quita obstáculos junto a la base e inténtalo de nuevo": {
+        "en": "Clear obstacles near the dock and try again",
+        "pt": "Remove obstáculos junto à base e tenta novamente",
+        "fr": "Dégagez les obstacles près de la base et réessayez",
+        "pl": "Usuń przeszkody przy bazie i spróbuj ponownie",
+        "de": "Hindernisse bei der Ladestation entfernen und erneut versuchen",
+        "it": "Rimuovi gli ostacoli vicino alla base e riprova",
+        "nl": "Verwijder obstakels bij het laadstation en probeer opnieuw",
+        "ca": "Treu els obstacles a prop de la base i torna-ho a provar"},
+    "Limpia los sensores anticolisión e inténtalo de nuevo": {
+        "en": "Clean the anti-collision sensors and try again",
+        "pt": "Limpa os sensores anticolisão e tenta novamente",
+        "fr": "Nettoyez les capteurs anticollision et réessayez",
+        "pl": "Wyczyść czujniki antykolizyjne i spróbuj ponownie",
+        "de": "Kollisionssensoren reinigen und erneut versuchen",
+        "it": "Pulisci i sensori anticollisione e riprova",
+        "nl": "Maak de antibotssensoren schoon en probeer opnieuw",
+        "ca": "Neteja els sensors anticol·lisió i torna-ho a provar"},
+    "Reubicación fallida: elige un recorrido más corto": {
+        "en": "Relocation failed: pick a shorter route", "pt": "Reposicionamento falhado: escolhe um percurso mais curto",
+        "fr": "Repositionnement échoué : choisissez un trajet plus court",
+        "pl": "Nie udało się ustalić pozycji: wybierz krótszą trasę",
+        "de": "Neupositionierung fehlgeschlagen: Wähle eine kürzere Route",
+        "it": "Riposizionamento non riuscito: scegli un percorso più breve",
+        "nl": "Herpositioneren mislukt: kies een kortere route", "ca": "Reubicació fallida: tria un recorregut més curt"},
+    "Coloca el robot en el suelo e inícialo": {
+        "en": "Place the robot on the floor and start it", "pt": "Coloca o robô no chão e inicia-o",
+        "fr": "Posez le robot au sol et démarrez-le", "pl": "Postaw robota na podłodze i uruchom go",
+        "de": "Setze den Roboter auf den Boden und starte ihn", "it": "Appoggia il robot a terra e avvialo",
+        "nl": "Zet de robot op de grond en start hem", "ca": "Posa el robot a terra i inicia'l"},
+    "Limpia los sensores anticaída y reubica el robot": {
+        "en": "Clean the anti-drop sensors and reposition the robot",
+        "pt": "Limpa os sensores anti-queda e reposiciona o robô",
+        "fr": "Nettoyez les capteurs anti-chute et repositionnez le robot",
+        "pl": "Wyczyść czujniki przeciwupadkowe i przestaw robota",
+        "de": "Absturzsensoren reinigen und Roboter neu positionieren",
+        "it": "Pulisci i sensori anticaduta e riposiziona il robot",
+        "nl": "Maak de valsensoren schoon en plaats de robot opnieuw",
+        "ca": "Neteja els sensors anticaiguda i reubica el robot"},
+    "Parachoques atascado o bloqueado": {
+        "en": "Bumper stuck or jammed", "pt": "Para-choques preso ou bloqueado",
+        "fr": "Pare-chocs coincé ou bloqué", "pl": "Zderzak zablokowany lub zacięty",
+        "de": "Stoßstange klemmt oder ist blockiert", "it": "Paraurti incastrato o bloccato",
+        "nl": "Bumper vastzittend of geblokkeerd", "ca": "Parxocs encallat o bloquejat"},
+    "No pudo llegar a la base: quita obstáculos alrededor": {
+        "en": "Couldn't reach the dock: clear the obstacles around it",
+        "pt": "Não conseguiu chegar à base: remove os obstáculos à volta",
+        "fr": "Impossible d'atteindre la base : dégagez les obstacles autour",
+        "pl": "Nie udało się dotrzeć do bazy: usuń przeszkody wokół niej",
+        "de": "Ladestation konnte nicht erreicht werden: Hindernisse drumherum entfernen",
+        "it": "Impossibile raggiungere la base: rimuovi gli ostacoli intorno",
+        "nl": "Kon het laadstation niet bereiken: verwijder obstakels eromheen",
+        "ca": "No ha pogut arribar a la base: treu els obstacles del voltant"},
+    "Error al volver a la base": {
+        "en": "Error returning to the dock", "pt": "Erro ao voltar à base",
+        "fr": "Erreur lors du retour à la base", "pl": "Błąd podczas powrotu do bazy",
+        "de": "Fehler bei der Rückkehr zur Ladestation", "it": "Errore nel ritorno alla base",
+        "nl": "Fout bij het terugkeren naar het laadstation", "ca": "Error en tornar a la base"},
+    "Atascado: colócalo en la base de carga": {
+        "en": "Stuck: place it on the charging dock", "pt": "Encravado: coloca-o na base de carga",
+        "fr": "Coincé : placez-le sur la base de charge", "pl": "Utknął: ustaw go na bazie ładującej",
+        "de": "Festgefahren: Setze ihn auf die Ladestation", "it": "Bloccato: posizionalo sulla base di ricarica",
+        "nl": "Vastgelopen: plaats hem op het laadstation", "ca": "Encallat: col·loca'l a la base de càrrega"},
+    "Base bloqueada: retira los obstáculos de alrededor": {
+        "en": "Dock blocked: remove the obstacles around it",
+        "pt": "Base bloqueada: remove os obstáculos à volta", "fr": "Base bloquée : retirez les obstacles autour",
+        "pl": "Baza zablokowana: usuń przeszkody wokół niej",
+        "de": "Ladestation blockiert: Hindernisse drumherum entfernen",
+        "it": "Base bloccata: rimuovi gli ostacoli intorno",
+        "nl": "Laadstation geblokkeerd: verwijder obstakels eromheen",
+        "ca": "Base bloquejada: treu els obstacles del voltant"},
+    "Temperatura fuera de rango: espera a que se normalice": {
+        "en": "Temperature out of range: wait for it to normalize",
+        "pt": "Temperatura fora do intervalo: espera que normalize",
+        "fr": "Température hors limites : attendez qu'elle se normalise",
+        "pl": "Temperatura poza zakresem: poczekaj, aż się ustabilizuje",
+        "de": "Temperatur außerhalb des zulässigen Bereichs: Warte, bis sie sich normalisiert",
+        "it": "Temperatura fuori range: attendi che si normalizzi",
+        "nl": "Temperatuur buiten bereik: wacht tot deze normaliseert",
+        "ca": "Temperatura fora de rang: espera que es normalitzi"},
+    "Actualizando el sistema: inténtalo más tarde": {
+        "en": "Updating the system: try again later", "pt": "A atualizar o sistema: tenta mais tarde",
+        "fr": "Mise à jour du système en cours : réessayez plus tard",
+        "pl": "Aktualizacja systemu: spróbuj ponownie później",
+        "de": "System wird aktualisiert: Versuche es später erneut",
+        "it": "Aggiornamento del sistema in corso: riprova più tardi",
+        "nl": "Systeem wordt bijgewerkt: probeer het later opnieuw",
+        "ca": "Actualitzant el sistema: torna-ho a provar més tard"},
+    "Batería baja: espera a que termine de cargar": {
+        "en": "Low battery: wait for it to finish charging", "pt": "Bateria fraca: espera que termine de carregar",
+        "fr": "Batterie faible : attendez la fin de la charge",
+        "pl": "Niski poziom baterii: poczekaj, aż się naładuje",
+        "de": "Akku schwach: Warte, bis der Ladevorgang abgeschlossen ist",
+        "it": "Batteria scarica: attendi che finisca di caricarsi",
+        "nl": "Batterij bijna leeg: wacht tot het opladen klaar is",
+        "ca": "Bateria baixa: espera que acabi de carregar"},
+    "Cepillo central bloqueado: retíralo y límpialo": {
+        "en": "Main brush jammed: take it out and clean it", "pt": "Escova central bloqueada: retira-a e limpa-a",
+        "fr": "Brosse centrale bloquée : retirez-la et nettoyez-la",
+        "pl": "Szczotka główna zablokowana: wyjmij ją i wyczyść",
+        "de": "Hauptbürste blockiert: Entnehmen und reinigen", "it": "Spazzola centrale bloccata: rimuovila e puliscila",
+        "nl": "Hoofdborstel geblokkeerd: verwijder en maak hem schoon",
+        "ca": "Raspall central bloquejat: treu-lo i neteja'l"},
+    "Cepillo lateral bloqueado: quita los obstáculos": {
+        "en": "Side brush jammed: clear the obstructions", "pt": "Escova lateral bloqueada: remove os obstáculos",
+        "fr": "Brosse latérale bloquée : retirez les obstructions",
+        "pl": "Szczotka boczna zablokowana: usuń przeszkody", "de": "Seitenbürste blockiert: Hindernisse entfernen",
+        "it": "Spazzola laterale bloccata: rimuovi le ostruzioni",
+        "nl": "Zijborstel geblokkeerd: verwijder de obstakels", "ca": "Raspall lateral bloquejat: treu els obstacles"},
+    "Coloca bien el depósito de agua": {
+        "en": "Fit the water tank properly", "pt": "Coloca bem o depósito de água",
+        "fr": "Installez correctement le réservoir d'eau", "pl": "Prawidłowo zamontuj zbiornik na wodę",
+        "de": "Wassertank richtig einsetzen", "it": "Inserisci correttamente il serbatoio dell'acqua",
+        "nl": "Plaats het waterreservoir goed", "ca": "Col·loca bé el dipòsit d'aigua"},
+    "Falta la mopa: colócala": {
+        "en": "Mop missing: attach it", "pt": "Falta a mopa: coloca-a",
+        "fr": "Serpillière manquante : installez-la", "pl": "Brak mopa: zamontuj go",
+        "de": "Wischtuch fehlt: Anbringen", "it": "Panno mancante: inseriscilo",
+        "nl": "Dweil ontbreekt: bevestig hem", "ca": "Falta la mopa: col·loca-la"},
+    "Revisa el filtro: límpialo y sécalo": {
+        "en": "Check the filter: clean it and let it dry", "pt": "Verifica o filtro: limpa-o e seca-o",
+        "fr": "Vérifiez le filtre : nettoyez-le et laissez-le sécher", "pl": "Sprawdź filtr: wyczyść go i wysusz",
+        "de": "Filter prüfen: reinigen und trocknen lassen", "it": "Controlla il filtro: puliscilo e asciugalo",
+        "nl": "Controleer het filter: maak het schoon en laat het drogen", "ca": "Revisa el filtre: neteja'l i asseca'l"},
+    "Depósito de agua bajo": {
+        "en": "Water tank low", "pt": "Depósito de água baixo", "fr": "Réservoir d'eau bas",
+        "pl": "Niski poziom wody w zbiorniku", "de": "Wassertank fast leer",
+        "it": "Serbatoio dell'acqua quasi vuoto", "nl": "Waterreservoir bijna leeg", "ca": "Dipòsit d'aigua baix"},
+    "La mopa puede necesitar limpieza": {
+        "en": "The mop may need cleaning", "pt": "A mopa pode precisar de limpeza",
+        "fr": "La serpillière a peut-être besoin d'être nettoyée", "pl": "Mop może wymagać czyszczenia",
+        "de": "Das Wischtuch muss möglicherweise gereinigt werden",
+        "it": "Il panno potrebbe aver bisogno di essere pulito", "nl": "De dweil heeft mogelijk reiniging nodig",
+        "ca": "La mopa pot necessitar neteja"},
+    "Depósito de polvo lleno": {
+        "en": "Dust bin full", "pt": "Depósito de pó cheio", "fr": "Bac à poussière plein",
+        "pl": "Pojemnik na kurz pełny", "de": "Staubbehälter voll", "it": "Contenitore della polvere pieno",
+        "nl": "Stofreservoir vol", "ca": "Dipòsit de pols ple"},
+    "Temperatura de la batería anormal": {
+        "en": "Abnormal battery temperature", "pt": "Temperatura da bateria anormal",
+        "fr": "Température de la batterie anormale", "pl": "Nieprawidłowa temperatura baterii",
+        "de": "Ungewöhnliche Akkutemperatur", "it": "Temperatura della batteria anomala",
+        "nl": "Afwijkende batterijtemperatuur", "ca": "Temperatura de la bateria anormal"},
+    "Temperatura de la batería normalizada": {
+        "en": "Battery temperature back to normal", "pt": "Temperatura da bateria normalizada",
+        "fr": "Température de la batterie redevenue normale", "pl": "Temperatura baterii wróciła do normy",
+        "de": "Akkutemperatur wieder normal", "it": "Temperatura della batteria tornata normale",
+        "nl": "Batterijtemperatuur weer normaal", "ca": "Temperatura de la bateria normalitzada"},
+    "Batería demasiado baja para la programación": {
+        "en": "Battery too low to run the schedule", "pt": "Bateria demasiado fraca para a programação",
+        "fr": "Batterie trop faible pour la programmation", "pl": "Bateria zbyt słaba na zaplanowane sprzątanie",
+        "de": "Akku zu schwach für den geplanten Lauf", "it": "Batteria troppo scarica per la programmazione",
+        "nl": "Batterij te leeg voor de planning", "ca": "Bateria massa baixa per a la programació"},
+
+    # — códigos oficiales añadidos en v0.31.0 (529-605, 2000, 2114; informe de @mactron254, #12) —
+    "Instala el depósito de agua 2 en 1 y la mopa": {
+        "en": "Install the 2-in-1 water tank and the mop", "pt": "Instala o depósito de água 2 em 1 e a mopa",
+        "fr": "Installez le réservoir d'eau 2 en 1 et la serpillière", "pl": "Zamontuj zbiornik na wodę 2 w 1 i mop",
+        "de": "Setze den 2-in-1-Wassertank und den Mopp ein", "it": "Installa il serbatoio dell'acqua 2 in 1 e il panno",
+        "nl": "Plaats het 2-in-1-waterreservoir en de dweil", "ca": "Instal·la el dipòsit d'aigua 2 en 1 i la mopa"},
+    "Apagado automático: demasiado tiempo en espera": {
+        "en": "Auto power-off: standby time too long", "pt": "Desligado automático: demasiado tempo em espera",
+        "fr": "Arrêt automatique : veille trop longue", "pl": "Automatyczne wyłączenie: zbyt długi czas czuwania",
+        "de": "Automatisch ausgeschaltet: zu lange im Standby", "it": "Spegnimento automatico: troppo tempo in standby",
+        "nl": "Automatisch uitgeschakeld: te lang in stand-by", "ca": "Apagada automàtica: massa temps en espera"},
+    "Apagado automático: batería por debajo del 15 %": {
+        "en": "Auto power-off: battery below 15 %", "pt": "Desligado automático: bateria abaixo de 15 %",
+        "fr": "Arrêt automatique : batterie sous 15 %", "pl": "Automatyczne wyłączenie: bateria poniżej 15 %",
+        "de": "Automatisch ausgeschaltet: Akku unter 15 %", "it": "Spegnimento automatico: batteria sotto il 15 %",
+        "nl": "Automatisch uitgeschakeld: accu onder 15 %", "ca": "Apagada automàtica: bateria per sota del 15 %"},
+    "Error al crear el mapa": {
+        "en": "Failed to create the map", "pt": "Erro ao criar o mapa",
+        "fr": "Échec de la création de la carte", "pl": "Nie udało się utworzyć mapy",
+        "de": "Karte konnte nicht erstellt werden", "it": "Errore nella creazione della mappa",
+        "nl": "Kaart maken mislukt", "ca": "Error en crear el mapa"},
+    "Cepillo lateral anormal: compruébalo y límpialo": {
+        "en": "Abnormal side brush: check and clean it", "pt": "Escova lateral anómala: verifica-a e limpa-a",
+        "fr": "Brosse latérale anormale : vérifiez-la et nettoyez-la", "pl": "Nieprawidłowa szczotka boczna: sprawdź ją i wyczyść",
+        "de": "Seitenbürste auffällig: prüfen und reinigen", "it": "Spazzola laterale anomala: controllala e puliscila",
+        "nl": "Zijborstel afwijkend: controleer en reinig hem", "ca": "Raspall lateral anormal: comprova'l i neteja'l"},
+    "Sensor de reconocimiento visual anormal": {
+        "en": "Abnormal visual recognition sensor", "pt": "Sensor de reconhecimento visual anómalo",
+        "fr": "Capteur de reconnaissance visuelle anormal", "pl": "Nieprawidłowy czujnik rozpoznawania obrazu",
+        "de": "Sensor für Bilderkennung auffällig", "it": "Sensore di riconoscimento visivo anomalo",
+        "nl": "Sensor voor beeldherkenning afwijkend", "ca": "Sensor de reconeixement visual anormal"},
+    "Sensor infrarrojo de esquinas anormal": {
+        "en": "Abnormal infrared corner sensor", "pt": "Sensor infravermelho de cantos anómalo",
+        "fr": "Capteur infrarouge d'angles anormal", "pl": "Nieprawidłowy czujnik podczerwieni narożników",
+        "de": "Infrarot-Ecksensor auffällig", "it": "Sensore a infrarossi degli angoli anomalo",
+        "nl": "Infraroodsensor voor hoeken afwijkend", "ca": "Sensor infraroig de cantonades anormal"},
+    "Se ha caído el depósito de polvo": {
+        "en": "The dust bin has fallen off", "pt": "O depósito de pó caiu",
+        "fr": "Le bac à poussière est tombé", "pl": "Pojemnik na kurz wypadł",
+        "de": "Der Staubbehälter ist herausgefallen", "it": "Il contenitore della polvere è caduto",
+        "nl": "Het stofreservoir is losgeraakt", "ca": "S'ha caigut el dipòsit de pols"},
+    "Se ha caído el depósito de agua 2 en 1": {
+        "en": "The 2-in-1 water tank has fallen off", "pt": "O depósito de água 2 em 1 caiu",
+        "fr": "Le réservoir d'eau 2 en 1 est tombé", "pl": "Zbiornik na wodę 2 w 1 wypadł",
+        "de": "Der 2-in-1-Wassertank ist herausgefallen", "it": "Il serbatoio dell'acqua 2 in 1 è caduto",
+        "nl": "Het 2-in-1-waterreservoir is losgeraakt", "ca": "S'ha caigut el dipòsit d'aigua 2 en 1"},
+    "Se ha caído el depósito de agua": {
+        "en": "The water tank has fallen off", "pt": "O depósito de água caiu",
+        "fr": "Le réservoir d'eau est tombé", "pl": "Zbiornik na wodę wypadł",
+        "de": "Der Wassertank ist herausgefallen", "it": "Il serbatoio dell'acqua è caduto",
+        "nl": "Het waterreservoir is losgeraakt", "ca": "S'ha caigut el dipòsit d'aigua"},
+    "Cepillo central: protección por sobrecorriente": {
+        "en": "Main brush: overcurrent protection", "pt": "Escova central: proteção contra sobrecorrente",
+        "fr": "Brosse principale : protection contre les surintensités", "pl": "Szczotka główna: zabezpieczenie nadprądowe",
+        "de": "Hauptbürste: Überstromschutz", "it": "Spazzola centrale: protezione da sovracorrente",
+        "nl": "Hoofdborstel: overstroombeveiliging", "ca": "Raspall central: protecció per sobreintensitat"},
+    "Estación de autovaciado: acumulación de polvo anormal": {
+        "en": "Auto-empty station: abnormal dust accumulation", "pt": "Estação de esvaziamento: acumulação de pó anómala",
+        "fr": "Station d'auto-vidage : accumulation de poussière anormale", "pl": "Stacja opróżniania: nieprawidłowe gromadzenie kurzu",
+        "de": "Absaugstation: ungewöhnliche Staubansammlung", "it": "Stazione di svuotamento: accumulo di polvere anomalo",
+        "nl": "Leegstation: afwijkende stofophoping", "ca": "Estació de buidatge: acumulació de pols anormal"},
+    "Agua insuficiente: vibración de la mopa desactivada; añade agua": {
+        "en": "Not enough water: mop vibration disabled; add water", "pt": "Água insuficiente: vibração da mopa desativada; adiciona água",
+        "fr": "Eau insuffisante : vibration de la serpillière désactivée ; ajoutez de l'eau", "pl": "Za mało wody: wibracja mopa wyłączona; dolej wody",
+        "de": "Zu wenig Wasser: Mopp-Vibration deaktiviert; Wasser nachfüllen", "it": "Acqua insufficiente: vibrazione del panno disattivata; aggiungi acqua",
+        "nl": "Te weinig water: dweiltrilling uitgeschakeld; vul water bij", "ca": "Aigua insuficient: vibració de la mopa desactivada; afegeix aigua"},
+    "Vacía el depósito de polvo: lleva mucho tiempo sin limpiarse": {
+        "en": "Empty the dust bin: it hasn't been cleaned for a long time", "pt": "Esvazia o depósito de pó: há muito tempo que não é limpo",
+        "fr": "Videz le bac à poussière : il n'a pas été nettoyé depuis longtemps", "pl": "Opróżnij pojemnik na kurz: od dawna nie był czyszczony",
+        "de": "Staubbehälter leeren: lange nicht gereinigt", "it": "Svuota il contenitore della polvere: non viene pulito da tempo",
+        "nl": "Leeg het stofreservoir: al lang niet schoongemaakt", "ca": "Buida el dipòsit de pols: fa molt que no es neteja"},
+    "15 h limpiando sin vaciar: vacía el depósito de polvo": {
+        "en": "15 h cleaning without emptying: empty the dust bin", "pt": "15 h a limpar sem esvaziar: esvazia o depósito de pó",
+        "fr": "15 h de nettoyage sans vidage : videz le bac à poussière", "pl": "15 h sprzątania bez opróżniania: opróżnij pojemnik na kurz",
+        "de": "15 Std. Reinigung ohne Leeren: Staubbehälter leeren", "it": "15 h di pulizia senza svuotare: svuota il contenitore della polvere",
+        "nl": "15 u schoonmaken zonder legen: leeg het stofreservoir", "ca": "15 h netejant sense buidar: buida el dipòsit de pols"},
 }
 
 

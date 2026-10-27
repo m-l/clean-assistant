@@ -354,7 +354,10 @@ class MqttBridge:
         self._disc("sensor", f"{uid}_warning", {
             "name": f"Conga {t(lang, 'Aviso')}", "unique_id": f"{uid}_warning",
             "state_topic": f"conga/{node}/warning", "icon": "mdi:alert"})
-        self._pub(f"conga/{node}/warning", getattr(self.robot.state, "warning", None) or "")
+        # el valor publicado aquí (no solo el nombre/icono de la entidad) debe traducirse: es el
+        # texto que ve el usuario como estado del sensor "Conga Aviso" (ver WARN_MESSAGES en
+        # conga_core/state.py y el bloque de traducciones correspondiente en backend/i18n.py).
+        self._pub(f"conga/{node}/warning", t(lang, getattr(self.robot.state, "warning", None) or ""))
         for key, name, icon in (("main_brush", "Cepillo central", "mdi:broom"),
                                 ("side_brush", "Cepillo lateral", "mdi:broom"),
                                 ("filter", "Filtro", "mdi:air-filter"),
@@ -710,7 +713,8 @@ class MqttBridge:
             low_water = False
         payload["low_water"] = "ON" if low_water else "OFF"
         self._pub(self.t_state, json.dumps(payload))
-        self._pub(f"conga/{self.node}/warning", s.warning or "")   # aviso/error actual (o vacío)
+        # traducido (ver el comentario equivalente en publish_discovery más arriba)
+        self._pub(f"conga/{self.node}/warning", t(self._lang(), s.warning or ""))
         if s.area is not None:
             self._pub(f"conga/{self.node}/area", s.area)
         if s.clean_time is not None:

@@ -94,6 +94,37 @@ def battery_pct(raw) -> int:
     return max(0, min(100, int(raw) // 2))
 
 
+# horario "de fábrica" que el robot trae siempre (01-01-2018, desactivado): no es del usuario
+BUILTIN_ORDER_ID = 1514736000
+
+
+def parse_orders(f: dict) -> list[dict]:
+    """DEVICE_ORDERLIST_GETTING_RSP (0x10CE) -> horarios con el formato de getOrder6090 de la gen.
+    nueva, para mostrarlos igual. Estructura de las capturas de @mactron254 (#12):
+      3 (repetido) = orden {1 orderId (epoch), 2 activo, 3 ?, 4 días (bits, 0x7F = todos),
+                            5 minutos desde medianoche, 6 {1 mapId, 2 planId, 3, 4, 5 agua?, 6}}
+      4 (repetido) = mapa {1 mapId, 2 nombre, 3 {1 planId, 2 nombre del plan}}"""
+    plans = {}
+    for m in f.get(4, []):
+        md = pb.decode(m)
+        for p in md.get(3, []):
+            pd = pb.decode(p)
+            plans[(pb.first(md, 1, 0), pb.first(pd, 1, 0))] = pb.as_str(pb.first(pd, 2, b"")).strip()
+    out = []
+    for o in f.get(3, []):
+        od = pb.decode(o)
+        oid = int(pb.first(od, 1, 0))
+        if oid == BUILTIN_ORDER_ID:
+            continue
+        sub = pb.decode(pb.first(od, 6, b""))
+        mid, pid = int(pb.first(sub, 1, 0)), int(pb.first(sub, 2, 0))
+        out.append({"orderid": oid, "enable": int(pb.first(od, 2, 0)), "repeat": 1,
+                    "weekday": int(pb.first(od, 4, 0)), "day_time": int(pb.first(od, 5, 0)),
+                    "mapid": mid, "plan_id": pid, "roomPer": [],
+                    "order_name": plans.get((mid, pid)) or "Horario de la app"})
+    return out
+
+
 def _recv_exact(sock, n: int) -> bytes:
     buf = bytearray()
     while len(buf) < n:
@@ -184,7 +215,8 @@ class LegacyRobot:
                 pass
 
     def query_orders(self):
-        pass                           # horarios legacy (ORDERLIST): pendiente
+        """Pide los horarios guardados en el robot (p. ej. creados con la app oficial)."""
+        self._send("DEVICE_ORDERLIST_GETTING_REQ", {})
 
     def command(self, control: dict) -> dict:
         """Traduce un `control` de la gen. nueva al opcode legacy equivalente."""
@@ -600,6 +632,7 @@ class LegacyRobot:
         self._request_map()
         self._send("DEVICE_MAPID_GET_CONSUMABLES_PARAM_REQ", {})
         self._send("DEVICE_WLAN_INFO_GETTING_REQ", {})
+        self.query_orders()
 
     def _request_map(self) -> dict:
         """Pide el mapa completo (llega por 4030 como GET_GLOBAL_INFO_RSP), con la misma
@@ -701,6 +734,10 @@ class LegacyRobot:
             self.log("  [legacy] el robot tiene un mapa nuevo pendiente de guardar")
             self.state.pending_map = True
             self._notify()
+        elif op == "DEVICE_ORDERLIST_GETTING_RSP":       # horarios guardados en el robot
+            self.orders = parse_orders(f)
+            self.log(f"  [legacy] horarios guardados en el robot: {len(self.orders)}")
+            self._fire(self.on_orders)
         elif op == "DEVICE_WLAN_INFO_GETTING_RSP":       # red del robot (solo lectura)
             body = pb.decode(pb.first(f, 3, b""))
             self.state.wifi = {"ssid": pb.as_str(pb.first(body, 2, b"")),

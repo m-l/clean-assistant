@@ -15,6 +15,7 @@ def _is_error_fault(fault) -> bool:
 
 # faultCode -> mensaje entendible (en español; el frontend los traduce por su texto). Lista
 # capturada de la app de Cecotec del Conga 4690 (issue #6, gracias @teosoft0) + 510 de @serra410.
+# 529-605, 2000 y 2114: textos oficiales de las apps 7090/8090/9090 (decompiladas por @mactron254, #12).
 WARN_MESSAGES = {
     500: "Láser bloqueado: retira lo que lo obstruya",
     501: "Rueda en el aire: coloca el robot en el suelo",
@@ -44,7 +45,31 @@ WARN_MESSAGES = {
     527: "Depósito de polvo lleno",
     530: "Temperatura de la batería anormal",
     531: "Temperatura de la batería normalizada",
+    529: "Instala el depósito de agua 2 en 1 y la mopa",
+    533: "Apagado automático: demasiado tiempo en espera",
+    534: "Apagado automático: batería por debajo del 15 %",
+    550: "Temperatura de la batería anormal",
+    551: "Temperatura de la batería normalizada",
+    559: "Error al crear el mapa",
+    560: "Cepillo lateral anormal: compruébalo y límpialo",
+    561: "Sensor de reconocimiento visual anormal",
+    562: "Sensor infrarrojo de esquinas anormal",
+    563: "Se ha caído el depósito de polvo",
+    564: "Se ha caído el depósito de agua 2 en 1",
+    565: "Láser bloqueado: retira lo que lo obstruya",
+    566: "Se ha caído el depósito de agua",
+    567: "Cepillo central: protección por sobrecorriente",
+    590: "Estación de autovaciado: acumulación de polvo anormal",
+    591: "Estación de autovaciado: acumulación de polvo anormal",
+    592: "Estación de autovaciado: acumulación de polvo anormal",
+    593: "Estación de autovaciado: acumulación de polvo anormal",
+    594: "Estación de autovaciado: acumulación de polvo anormal",
+    595: "Estación de autovaciado: acumulación de polvo anormal",
+    596: "Estación de autovaciado: acumulación de polvo anormal",
+    605: "Agua insuficiente: vibración de la mopa desactivada; añade agua",
+    2000: "Vacía el depósito de polvo: lleva mucho tiempo sin limpiarse",
     2003: "Batería demasiado baja para la programación",
+    2114: "15 h limpiando sin vaciar: vacía el depósito de polvo",
 }
 
 

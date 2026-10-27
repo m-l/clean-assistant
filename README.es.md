@@ -266,6 +266,8 @@ en este orden, sin que tengas que meter nada:
 
 Puedes elegir el modo en **Ajustes → Modo de funcionamiento** (Local / Cloud + Local).
 
+> **Cloud + Local y la app oficial:** la app oficial también se conecta a `tcp-cecotec.3irobotix.net`. Si tu reescritura DNS vale para toda la red, un móvil conectado a tu WiFi acaba en Clean Assistant en vez de en la nube. Aplica la reescritura **solo a la IP del robot** (p. ej. AdGuard Home: `||tcp-cecotec.3irobotix.net^$dnsrewrite=<IP_HA>,client=<IP_ROBOT>`) o usa la app con datos móviles.
+
 ## Docker
 
 ```bash

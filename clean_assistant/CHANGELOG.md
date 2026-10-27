@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.31.0
+Gracias a la ingeniería inversa de las apps oficiales de @mactron254 (#12):
+- **Conga 3890: limpiar habitaciones** (#14). Su app no tiene orden directa: lanza un horario de un
+  solo uso que empieza ya (`setOrder6090` con la hora y el día actuales). Clean Assistant hace lo
+  mismo en el 3890 y borra ese horario cuando la limpieza termina (o si no arranca en 5 min).
+- **Avisos oficiales nuevos** (apps 7090/8090/9090): 529, 533, 534, 550, 551, 559-567 (560 = cepillo
+  lateral anormal), 590-596 (estación de autovaciado), 605, 2000 y 2114, en los 9 idiomas.
+- **Legacy (3xxx/4xxx): horarios del robot.** Se leen al conectar (`0x10CD` → `0x10CE`) y se muestran en
+  «Horarios guardados en el robot» (p. ej. los creados con la app oficial). Solo lectura: no se importan,
+  porque el robot ya los ejecuta y Clean Assistant los lanzaría otra vez.
+- README: en Cloud + Local, la reescritura DNS debe aplicarse solo al robot (o usar la app con datos
+  móviles), porque la app oficial también se conecta a `tcp-cecotec.3irobotix.net`.
+
 ## 0.30.1
 - **Conga 3890: los horarios ya no piden la mopa** (issue #14, @Here87). La app oficial del 3890 manda
   `cleanmode`/`sweep_mode` = 3 para "Auto"; Clean Assistant mandaba 0 (el "Auto" del 8090) y el 3890

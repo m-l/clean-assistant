@@ -318,6 +318,25 @@ def build_order(plan, map_head_id, rooms_meta=None, enable=None, project_type=No
 def delete_order(orderid): return {"control": "deleteOrder6090", "orderid": int(orderid)}
 
 
+# modelos SIN orden directa de limpiar habitación: su app oficial lo hace con un horario que empieza
+# YA (setOrder6090 con la hora/día actuales y orderid = epoch). Informe de @mactron254 (#12) sobre la
+# app del 3890: setRoomClean/3047 existe pero es código muerto (#14).
+ROOMS_AS_ORDER = ("CECOTECCRL20S-1001",)
+
+
+def immediate_order(room_ids, map_head_id, rooms_meta=None, project_type=None, now=None):
+    """Limpieza de habitaciones YA como horario de un solo uso (ver ROOMS_AS_ORDER)."""
+    now = now or datetime.datetime.now()
+    days = ["lun", "mar", "mie", "jue", "vie", "sab", "dom"]
+    plan = {"orderid": int(_time.time()), "name": "Clean Assistant",
+            "time": f"{now.hour}:{now.minute:02d}", "days": [days[now.weekday()]],
+            "rooms": [{"room": int(r), "fan": "Normal", "water": "Off", "mop": "Off"}
+                      for r in room_ids]}
+    order = build_order(plan, map_head_id, rooms_meta, True, project_type)
+    order["order"]["repeat"] = 0
+    return order
+
+
 # ---------------- config de habitaciones: nombre, categoría y tipo de suelo ----------------
 def set_plan_data(map_head_id, rooms, map_name="Interior"):
     """Guarda la config de habitaciones (setPlanData6090). Reemplazo de lista completa.

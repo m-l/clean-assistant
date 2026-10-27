@@ -451,6 +451,83 @@ STR: dict[str, dict[str, str]] = {
         "fr": "Batterie trop faible pour la programmation", "pl": "Bateria zbyt słaba na zaplanowane sprzątanie",
         "de": "Akku zu schwach für den geplanten Lauf", "it": "Batteria troppo scarica per la programmazione",
         "nl": "Batterij te leeg voor de planning", "ca": "Bateria massa baixa per a la programació"},
+
+    # — códigos oficiales añadidos en v0.31.0 (529-605, 2000, 2114; informe de @mactron254, #12) —
+    "Instala el depósito de agua 2 en 1 y la mopa": {
+        "en": "Install the 2-in-1 water tank and the mop", "pt": "Instala o depósito de água 2 em 1 e a mopa",
+        "fr": "Installez le réservoir d'eau 2 en 1 et la serpillière", "pl": "Zamontuj zbiornik na wodę 2 w 1 i mop",
+        "de": "Setze den 2-in-1-Wassertank und den Mopp ein", "it": "Installa il serbatoio dell'acqua 2 in 1 e il panno",
+        "nl": "Plaats het 2-in-1-waterreservoir en de dweil", "ca": "Instal·la el dipòsit d'aigua 2 en 1 i la mopa"},
+    "Apagado automático: demasiado tiempo en espera": {
+        "en": "Auto power-off: standby time too long", "pt": "Desligado automático: demasiado tempo em espera",
+        "fr": "Arrêt automatique : veille trop longue", "pl": "Automatyczne wyłączenie: zbyt długi czas czuwania",
+        "de": "Automatisch ausgeschaltet: zu lange im Standby", "it": "Spegnimento automatico: troppo tempo in standby",
+        "nl": "Automatisch uitgeschakeld: te lang in stand-by", "ca": "Apagada automàtica: massa temps en espera"},
+    "Apagado automático: batería por debajo del 15 %": {
+        "en": "Auto power-off: battery below 15 %", "pt": "Desligado automático: bateria abaixo de 15 %",
+        "fr": "Arrêt automatique : batterie sous 15 %", "pl": "Automatyczne wyłączenie: bateria poniżej 15 %",
+        "de": "Automatisch ausgeschaltet: Akku unter 15 %", "it": "Spegnimento automatico: batteria sotto il 15 %",
+        "nl": "Automatisch uitgeschakeld: accu onder 15 %", "ca": "Apagada automàtica: bateria per sota del 15 %"},
+    "Error al crear el mapa": {
+        "en": "Failed to create the map", "pt": "Erro ao criar o mapa",
+        "fr": "Échec de la création de la carte", "pl": "Nie udało się utworzyć mapy",
+        "de": "Karte konnte nicht erstellt werden", "it": "Errore nella creazione della mappa",
+        "nl": "Kaart maken mislukt", "ca": "Error en crear el mapa"},
+    "Cepillo lateral anormal: compruébalo y límpialo": {
+        "en": "Abnormal side brush: check and clean it", "pt": "Escova lateral anómala: verifica-a e limpa-a",
+        "fr": "Brosse latérale anormale : vérifiez-la et nettoyez-la", "pl": "Nieprawidłowa szczotka boczna: sprawdź ją i wyczyść",
+        "de": "Seitenbürste auffällig: prüfen und reinigen", "it": "Spazzola laterale anomala: controllala e puliscila",
+        "nl": "Zijborstel afwijkend: controleer en reinig hem", "ca": "Raspall lateral anormal: comprova'l i neteja'l"},
+    "Sensor de reconocimiento visual anormal": {
+        "en": "Abnormal visual recognition sensor", "pt": "Sensor de reconhecimento visual anómalo",
+        "fr": "Capteur de reconnaissance visuelle anormal", "pl": "Nieprawidłowy czujnik rozpoznawania obrazu",
+        "de": "Sensor für Bilderkennung auffällig", "it": "Sensore di riconoscimento visivo anomalo",
+        "nl": "Sensor voor beeldherkenning afwijkend", "ca": "Sensor de reconeixement visual anormal"},
+    "Sensor infrarrojo de esquinas anormal": {
+        "en": "Abnormal infrared corner sensor", "pt": "Sensor infravermelho de cantos anómalo",
+        "fr": "Capteur infrarouge d'angles anormal", "pl": "Nieprawidłowy czujnik podczerwieni narożników",
+        "de": "Infrarot-Ecksensor auffällig", "it": "Sensore a infrarossi degli angoli anomalo",
+        "nl": "Infraroodsensor voor hoeken afwijkend", "ca": "Sensor infraroig de cantonades anormal"},
+    "Se ha caído el depósito de polvo": {
+        "en": "The dust bin has fallen off", "pt": "O depósito de pó caiu",
+        "fr": "Le bac à poussière est tombé", "pl": "Pojemnik na kurz wypadł",
+        "de": "Der Staubbehälter ist herausgefallen", "it": "Il contenitore della polvere è caduto",
+        "nl": "Het stofreservoir is losgeraakt", "ca": "S'ha caigut el dipòsit de pols"},
+    "Se ha caído el depósito de agua 2 en 1": {
+        "en": "The 2-in-1 water tank has fallen off", "pt": "O depósito de água 2 em 1 caiu",
+        "fr": "Le réservoir d'eau 2 en 1 est tombé", "pl": "Zbiornik na wodę 2 w 1 wypadł",
+        "de": "Der 2-in-1-Wassertank ist herausgefallen", "it": "Il serbatoio dell'acqua 2 in 1 è caduto",
+        "nl": "Het 2-in-1-waterreservoir is losgeraakt", "ca": "S'ha caigut el dipòsit d'aigua 2 en 1"},
+    "Se ha caído el depósito de agua": {
+        "en": "The water tank has fallen off", "pt": "O depósito de água caiu",
+        "fr": "Le réservoir d'eau est tombé", "pl": "Zbiornik na wodę wypadł",
+        "de": "Der Wassertank ist herausgefallen", "it": "Il serbatoio dell'acqua è caduto",
+        "nl": "Het waterreservoir is losgeraakt", "ca": "S'ha caigut el dipòsit d'aigua"},
+    "Cepillo central: protección por sobrecorriente": {
+        "en": "Main brush: overcurrent protection", "pt": "Escova central: proteção contra sobrecorrente",
+        "fr": "Brosse principale : protection contre les surintensités", "pl": "Szczotka główna: zabezpieczenie nadprądowe",
+        "de": "Hauptbürste: Überstromschutz", "it": "Spazzola centrale: protezione da sovracorrente",
+        "nl": "Hoofdborstel: overstroombeveiliging", "ca": "Raspall central: protecció per sobreintensitat"},
+    "Estación de autovaciado: acumulación de polvo anormal": {
+        "en": "Auto-empty station: abnormal dust accumulation", "pt": "Estação de esvaziamento: acumulação de pó anómala",
+        "fr": "Station d'auto-vidage : accumulation de poussière anormale", "pl": "Stacja opróżniania: nieprawidłowe gromadzenie kurzu",
+        "de": "Absaugstation: ungewöhnliche Staubansammlung", "it": "Stazione di svuotamento: accumulo di polvere anomalo",
+        "nl": "Leegstation: afwijkende stofophoping", "ca": "Estació de buidatge: acumulació de pols anormal"},
+    "Agua insuficiente: vibración de la mopa desactivada; añade agua": {
+        "en": "Not enough water: mop vibration disabled; add water", "pt": "Água insuficiente: vibração da mopa desativada; adiciona água",
+        "fr": "Eau insuffisante : vibration de la serpillière désactivée ; ajoutez de l'eau", "pl": "Za mało wody: wibracja mopa wyłączona; dolej wody",
+        "de": "Zu wenig Wasser: Mopp-Vibration deaktiviert; Wasser nachfüllen", "it": "Acqua insufficiente: vibrazione del panno disattivata; aggiungi acqua",
+        "nl": "Te weinig water: dweiltrilling uitgeschakeld; vul water bij", "ca": "Aigua insuficient: vibració de la mopa desactivada; afegeix aigua"},
+    "Vacía el depósito de polvo: lleva mucho tiempo sin limpiarse": {
+        "en": "Empty the dust bin: it hasn't been cleaned for a long time", "pt": "Esvazia o depósito de pó: há muito tempo que não é limpo",
+        "fr": "Videz le bac à poussière : il n'a pas été nettoyé depuis longtemps", "pl": "Opróżnij pojemnik na kurz: od dawna nie był czyszczony",
+        "de": "Staubbehälter leeren: lange nicht gereinigt", "it": "Svuota il contenitore della polvere: non viene pulito da tempo",
+        "nl": "Leeg het stofreservoir: al lang niet schoongemaakt", "ca": "Buida el dipòsit de pols: fa molt que no es neteja"},
+    "15 h limpiando sin vaciar: vacía el depósito de polvo": {
+        "en": "15 h cleaning without emptying: empty the dust bin", "pt": "15 h a limpar sem esvaziar: esvazia o depósito de pó",
+        "fr": "15 h de nettoyage sans vidage : videz le bac à poussière", "pl": "15 h sprzątania bez opróżniania: opróżnij pojemnik na kurz",
+        "de": "15 Std. Reinigung ohne Leeren: Staubbehälter leeren", "it": "15 h di pulizia senza svuotare: svuota il contenitore della polvere",
+        "nl": "15 u schoonmaken zonder legen: leeg het stofreservoir", "ca": "15 h netejant sense buidar: buida el dipòsit de pols"},
 }
 
 

@@ -1300,7 +1300,10 @@ async def set_lang(payload: dict):
     _ui_prefs["lang"] = lang
     _save_prefs()
     if mqtt.client:
-        mqtt.publish_discovery()
+        # no basta con publish_discovery(): HA no refresca el nombre de una entidad MQTT ya
+        # registrada solo porque cambie el "name" del discovery -- hay que borrarla y
+        # recrearla (ver MqttBridge.republish_with_rename).
+        mqtt.republish_with_rename()
     return {"ok": True, "lang": _ui_prefs["lang"]}
 
 

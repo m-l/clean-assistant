@@ -496,6 +496,21 @@ class MqttBridge:
             self._pub(f"{self.disc}/{comp}/{obj}/config", "")
         self.log(f"[MQTT] retirado descubrimiento duplicado ({uid})")
 
+    def republish_with_rename(self):
+        """Como publish_discovery(), pero primero BORRA el descubrimiento retenido del uid
+        ACTUAL antes de volver a publicarlo (ver _clear_discovery, pensado originalmente solo
+        para uids viejos/duplicados). Hace falta porque Home Assistant NO actualiza el nombre
+        visible de una entidad MQTT ya registrada solo porque llegue un nuevo discovery con
+        "name" distinto -- se queda con el nombre con el que se creó hasta que la entidad se
+        borra/recrea, o se reinicia HA (comportamiento conocido de core, p. ej.
+        github.com/home-assistant/core/issues/99936). Se usa al cambiar el idioma de las
+        entidades (ver /api/prefs/lang); un simple publish_discovery() ahí dejaría los nombres
+        antiguos pegados hasta el próximo reinicio de HA, que es justo el síntoma reportado."""
+        if not self.client:
+            return
+        self._clear_discovery(self._current_uid())
+        self.publish_discovery()
+
     def note_web_command(self, action, p):
         """Sincroniza la sombra de preferencias en HA cuando el cambio viene de la web."""
         if not self.client:

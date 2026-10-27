@@ -17,6 +17,15 @@ RUN apk add --no-cache python3 py3-pip openssl jq git curl tzdata
 # imagen oficial. Revertir a miguelsg29/clean-assistant antes de preparar el PR.
 ARG APP_REPO=https://github.com/m-l/clean-assistant
 ARG APP_REF=main
+# NOTA LOCAL: el `RUN git clone` de abajo es, para Docker, siempre el MISMO comando -- no cambia
+# nunca aunque suba commits nuevos al fork y suba la versión del add-on en config.yaml. Sin esta
+# línea, Docker reutiliza la capa cacheada del primer build real y el contenedor se queda
+# CONGELADO en el commit que hubiera en ese momento, por más veces que se "actualice" el add-on
+# (así estuvieron varias correcciones de texto -- Danger Zone, succión -- sin aparecer nunca pese
+# a instalarse "la última versión"). `ADD <url>` SIEMPRE se vuelve a pedir en cada build; usando
+# la API de GitHub para el último commit de la rama, su contenido cambia con cada push nuevo y
+# fuerza a Docker a invalidar la capa de abajo y reclonar de verdad.
+ADD https://api.github.com/repos/m-l/clean-assistant/commits/${APP_REF} /tmp/cachebust.json
 RUN git clone --depth 1 --branch "${APP_REF}" "${APP_REPO}" /app \
     && pip3 install --no-cache-dir --break-system-packages -r /app/requirements.txt
 

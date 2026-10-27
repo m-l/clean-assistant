@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.31.3
+- **Textos del mapa nítidos.** Los nombres de habitaciones y zonas se pintaban dentro de la imagen del
+  mapa, que se escala en modo pixelado (y con el zoom), y se veían pixelados. Ahora van en una capa
+  vectorial encima: se ven como texto normal a cualquier zoom.
+- **Actividad:** cambiar de página ya no mueve el scroll.
+
 ## 0.31.2
 - **Los nombres de las habitaciones ya no se mueven al limpiar.** Mientras limpia, el robot marca lo ya
   limpiado de cada habitación como un segmento aparte (id + 50: Dormitorio 10 → 60). Ahora esas celdas

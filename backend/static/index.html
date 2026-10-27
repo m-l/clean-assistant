@@ -90,7 +90,7 @@
   svg.map.hidden{display:none}
   canvas.realmap{display:block;width:100%;height:auto;border-radius:12px;image-rendering:pixelated;cursor:pointer}
   .canvaswrap{display:none;position:relative;overflow:hidden;border-radius:12px;touch-action:none}
-  .mapzoom{position:relative;width:100%;transform-origin:0 0;will-change:transform}
+  .mapzoom{position:relative;width:100%;transform-origin:0 0}
   .maploader{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border-radius:12px;font-size:13px;font-weight:600;color:var(--muted);background:color-mix(in srgb,var(--surface) 70%,transparent);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
   .maploader[hidden]{display:none}
   .maploader .spin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
@@ -99,6 +99,8 @@
   body.has-realmap .zoomctl{display:flex}
   .zoomctl .iconbtn{font-size:18px;font-weight:600;line-height:1}
   .canvaswrap.show{display:block}
+  .maplabels{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+  .maplabels text{text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke-linejoin:round;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
   canvas.realmap.overlay{position:absolute;inset:0;width:100%;height:100%;image-rendering:auto;cursor:default;pointer-events:none;border-radius:12px}
   .room{cursor:pointer}
   .room .rfill{transition:fill .2s,opacity .2s}
@@ -382,6 +384,7 @@
         <div class="canvaswrap" id="canvasWrap">
           <div class="mapzoom" id="mapZoom">
             <canvas class="realmap" id="mapCanvas" aria-label="Mapa del robot"></canvas>
+            <svg class="maplabels" id="mapLabels" aria-hidden="true"></svg>
             <canvas class="realmap overlay" id="robotCanvas" aria-hidden="true"></canvas>
           </div>
           <div class="maploader" id="mapLoader" hidden><span class="spin"></span><span>Cambiando de mapa…</span></div>
@@ -1560,6 +1563,9 @@
     ctx.clearRect(0,0,cv.width,cv.height); ctx.imageSmoothingEnabled=false;
     gridTransform(ctx,scale); ctx.drawImage(off,0,0,w*scale,h*scale);
     ctx.setTransform(1,0,0,1,0,0);
+    // textos (nombres de zonas y habitaciones): en una capa SVG encima, no en el canvas; el canvas se
+    // escala con image-rendering:pixelated (y con el zoom), y el texto pintado en él se veía pixelado
+    var labels=[];
     // zonas (transformadas punto a punto, rectas) con su nombre en el centro
     ZONES.forEach(function(z){
       var col=cssVar((ZK[z.kind]||{}).c||'--faint'), cx=0, cy=0;
@@ -1568,11 +1574,9 @@
       ctx.closePath();
       ctx.fillStyle=col; ctx.globalAlpha=0.16; ctx.fill(); ctx.globalAlpha=1;
       ctx.strokeStyle=col; ctx.lineWidth=Math.max(1.5,scale*0.7); ctx.setLineDash([scale*2,scale*1.5]); ctx.stroke(); ctx.setLineDash([]);
-      if(z.name&&z.points.length){ cx/=z.points.length; cy/=z.points.length;
-        ctx.font='600 '+Math.max(9,Math.round(scale*3.4))+'px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
-        ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.lineWidth=Math.max(2,scale); ctx.strokeStyle=cssVar('--surface'); ctx.strokeText(z.name,cx,cy);
-        ctx.fillStyle=col; ctx.fillText(z.name,cx,cy); }
+      if(z.name&&z.points.length)
+        labels.push({x:cx/z.points.length, y:cy/z.points.length, text:z.name, fill:col,
+                     size:Math.max(9,Math.round(scale*3.4)), weight:600, halo:Math.max(2,scale)});
     });
     // zona seleccionada para editar: contorno resaltado + tiradores (esquinas + rotación)
     if(editZone&&editZone._cells){
@@ -1583,15 +1587,14 @@
       ec.forEach(function(c){ var vp=s2v(c[0],c[1]); ctx.beginPath(); ctx.arc(vp[0]*scale,vp[1]*scale,hr,0,6.29); ctx.fillStyle=cssVar('--surface'); ctx.fill(); ctx.strokeStyle=acc; ctx.lineWidth=Math.max(1.5,scale*0.6); ctx.stroke(); });
     }
     // etiquetas de habitación: halo (contorno del color de fondo) para leerse sobre cualquier zona
-    ctx.font='700 '+Math.max(12,Math.round(scale*5.2))+'px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
-    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.lineJoin='round'; ctx.miterLimit=2;
-    var _halo=cssVar('--surface');
     (MAP.rooms||[]).forEach(function(r){
       if(r.named===false)return;                      // no etiquetar segmentos temporales
-      var vp=s2v(r.center[0],r.center[1]), X=vp[0]*scale, Y=vp[1]*scale;
-      ctx.lineWidth=Math.max(3,scale*1.6); ctx.strokeStyle=_halo; ctx.strokeText(r.name, X, Y);
-      ctx.fillStyle=selected.has(r.id)?cssVar('--accent-ink'):cssVar('--ink');
-      ctx.fillText(r.name, X, Y); });
+      var vp=s2v(r.center[0],r.center[1]);
+      labels.push({x:vp[0]*scale, y:vp[1]*scale, text:r.name, weight:700,
+                   fill:selected.has(r.id)?cssVar('--accent-ink'):cssVar('--ink'),
+                   size:Math.max(12,Math.round(scale*5.2)), halo:Math.max(3,scale*1.6)});
+    });
+    renderMapLabels(labels, cv.width, cv.height);
     // rectángulo en curso de dibujo (4 esquinas transformadas -> bounding box en vista)
     if(drawRect&&drawKind){ var a=drawRect[0],b=drawRect[1], dcol=cssVar(ZK[drawKind].c),
         corners=[[a[0],a[1]],[b[0],a[1]],[b[0],b[1]],[a[0],b[1]]], xs=[], ys=[];
@@ -1606,6 +1609,19 @@
     sizeOverlay(); drawRobot();
   }
 
+  function renderMapLabels(labels, W, H){
+    var svg=document.getElementById('mapLabels'); if(!svg)return;
+    svg.setAttribute('viewBox','0 0 '+W+' '+H);
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    var halo=cssVar('--surface');
+    labels.forEach(function(l){
+      var el=document.createElementNS('http://www.w3.org/2000/svg','text');
+      el.setAttribute('x',l.x); el.setAttribute('y',l.y);
+      el.setAttribute('font-size',l.size); el.setAttribute('font-weight',l.weight);
+      el.setAttribute('fill',l.fill); el.setAttribute('stroke',halo); el.setAttribute('stroke-width',l.halo);
+      el.textContent=l.text; svg.appendChild(el);
+    });
+  }
   // ---- robot en vivo: capa superpuesta con posición animada ----
   var SCALE=1, RBT=null, RBT_T=null, rbtRAF=0;
   function sizeOverlay(){
@@ -2284,10 +2300,7 @@
     });
   }
   fetch(BASE+'api/history').then(function(r){return r.json();}).then(function(d){HISTORY=d.history||[];renderHistory();});
-  function histGo(dp){
-    HIST_PAGE+=dp; renderHistory();
-    var a=document.querySelector('[data-pane="actividad"]'); if(a&&a.scrollIntoView)a.scrollIntoView({block:'start'});
-  }
+  function histGo(dp){ HIST_PAGE+=dp; renderHistory(); }
   document.getElementById('histPrev').addEventListener('click',function(){histGo(-1);});
   document.getElementById('histNext').addEventListener('click',function(){histGo(1);});
   document.getElementById('histClear').addEventListener('click',async function(){

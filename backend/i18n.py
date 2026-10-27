@@ -131,7 +131,7 @@ STR: dict[str, dict[str, str]] = {
                       "nl": "Type basisstation", "ca": "Tipus de base"},
 
     # — opciones de los selectores (texto de origen = clave canónica en conga_core.commands,
-    #   salvo "Máx" -- ver FAN_LABELS en mqtt_bridge.py) —
+    #   salvo "Máx" -- usado solo en el backend legacy, ver FAN_LABELS_LEGACY en mqtt_bridge.py) —
     "Máx": {"en": "Max", "pt": "Máx", "fr": "Max", "pl": "Maks", "de": "Max", "it": "Max",
             "nl": "Max", "ca": "Màx"},
     "Eco": {},

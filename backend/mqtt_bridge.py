@@ -37,10 +37,18 @@ DUST_FREQ_REV = {v: k for k, v in DUST_FREQ.items()}
 
 # ---------------- etiquetas (ES) de las opciones de los `select`, por idioma (i18n) ----------------
 # La CLAVE de cada entrada sigue siendo la que espera conga_core.commands (lo que viaja al robot);
-# el VALOR es el texto en español que se le pasa a t() para traducirlo a mostrar en HA. "Off" en
-# succión se muestra "Máx": no es un apagado real, es un nivel de potencia más (igual que ya lo
-# hace la propia interfaz web -- ver el botón data-v="Off">Máx en backend/static/index.html).
-FAN_LABELS = {"Off": "Máx", "Eco": "Eco", "Normal": "Normal", "Turbo": "Turbo"}
+# el VALOR es el texto en español que se le pasa a t() para traducirlo a mostrar en HA.
+#
+# "Off" en succión (conga_core.commands.FAN["Off"]=0) es "apagar de verdad" SOLO en el backend
+# "new" (conga_core/commands.py, confirmado por ingeniería inversa sobre el propio 8090: se manda
+# set_preference(1, 0) tal cual). En el backend "legacy" NO lo es: conga_core/legacy/robot.py
+# remapea ese mismo 0 a 13 ("máximo" en la tabla real capturada de la app oficial) antes de
+# mandarlo al robot, así que ahí sí es un nivel de potencia más, no un apagado. Antes esta
+# etiqueta decía "Máx" para los dos backends (copiado del error que tenía la propia interfaz web,
+# ver backend/static/index.html); en el backend nuevo eso hacía que elegir "Máx" apagara
+# realmente la succión. Ver MqttBridge.legacy / self._fan_labels (__init__).
+FAN_LABELS_NEW = {"Off": "Off", "Eco": "Eco", "Normal": "Normal", "Turbo": "Turbo"}
+FAN_LABELS_LEGACY = {"Off": "Máx", "Eco": "Eco", "Normal": "Normal", "Turbo": "Turbo"}
 WATER_LABELS = {"Off": "Off", "Bajo": "Bajo", "Medio": "Medio", "Alto": "Alto"}
 MOP_LABELS = {"Off": "Off", "Estándar": "Estándar", "Fuerte": "Fuerte", "Potente": "Potente"}
 CLEAN_MODE_LABELS = {"Auto": "Auto", "Limpieza completa": "Limpieza completa",
@@ -93,6 +101,10 @@ class MqttBridge:
         self.schedules = schedules
         self._map_head_id = map_head_id
         self._rooms = rooms_provider
+        # ver el comentario sobre FAN_LABELS_NEW/FAN_LABELS_LEGACY: el significado real de
+        # FAN["Off"] depende del backend (nuevo = apagado real; legacy = remapeado a "máximo").
+        self.legacy = (env("CONGA_BACKEND", "new") or "new").lower() == "legacy"
+        self._fan_labels = FAN_LABELS_LEGACY if self.legacy else FAN_LABELS_NEW
         self.log = log
         self._persist = persist        # callback opcional para persistir prefs (frecuencia/base)
         self.host = env("MQTT_HOST")
@@ -164,7 +176,7 @@ class MqttBridge:
         return lang if lang in VALID_LANGS else "es"
 
     def _localized_options(self, canon_labels: dict):
-        """De {clave_canónica: texto_es} (FAN_LABELS, WATER_LABELS...) construye, en el idioma
+        """De {clave_canónica: texto_es} (self._fan_labels, WATER_LABELS...) construye, en el idioma
         actual, la lista de `options` a publicar en HA y el mapa inverso {opción_traducida ->
         clave_canónica} que _on_message necesita para volver a la clave que entiende
         conga_core.commands cuando HA manda de vuelta el valor elegido."""
@@ -370,7 +382,7 @@ class MqttBridge:
         # pero la clave canónica que entiende conga_core.commands se guarda en _opt_reverse
         # para poder volver a ella cuando HA manda de vuelta el valor elegido (_on_message).
         for key, name, labels, icon in (
-            ("fan", "Potencia succión", FAN_LABELS, "mdi:fan"),
+            ("fan", "Potencia succión", self._fan_labels, "mdi:fan"),
             ("water", "Nivel agua", WATER_LABELS, "mdi:water"),
             ("mop", "Vibración mopa", MOP_LABELS, "mdi:vibrate"),
             ("mode", "Modo de limpieza", CLEAN_MODE_LABELS, "mdi:broom"),

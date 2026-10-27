@@ -422,7 +422,7 @@
         <div class="phead">Modo</div>
         <div class="seg" data-cmd="mode"><button data-v="Auto" aria-pressed="true">Auto</button><button data-v="Fregado">Fregado</button><button data-v="Bordes">Bordes</button><button data-v="Espiral">Espiral</button></div>
         <div class="phead">Succión</div>
-        <div class="seg" data-cmd="fan"><button data-v="Eco">Eco</button><button data-v="Normal" aria-pressed="true">Normal</button><button data-v="Turbo">Turbo</button><button data-v="Off">Máx</button></div>
+        <div class="seg" data-cmd="fan"><button data-v="Off" id="fanOffBtn">Off</button><button data-v="Eco">Eco</button><button data-v="Normal" aria-pressed="true">Normal</button><button data-v="Turbo">Turbo</button></div>
         <div class="phead">Agua</div>
         <div class="seg" data-cmd="water"><button data-v="Off">Off</button><button data-v="Bajo">Bajo</button><button data-v="Medio" aria-pressed="true">Medio</button><button data-v="Alto">Alto</button></div>
         <div class="phead">Mopa</div>
@@ -2593,6 +2593,10 @@
     var ver=document.getElementById('appVer');
     if(ver&&info.version) ver.textContent='v'+info.version;
     if(info.backend==='legacy') document.body.classList.add('legacy');   // Conga 3xxx/4xxx
+    // El botón de succión "Off" (seg[data-cmd=fan]) es un apagado real SOLO en el backend nuevo.
+    // En el legacy, conga_core/legacy/robot.py remapea ese mismo valor a "máximo" de verdad
+    // (ver FAN_LABELS_LEGACY en mqtt_bridge.py) -- ahí el botón vuelve a decir "Máx", traducido.
+    if(info.backend==='legacy'){ var fb=document.getElementById('fanOffBtn'); if(fb) fb.textContent=t('Máx'); }
     var ml=document.getElementById('mapLiveTog'); if(ml) ml.setAttribute('aria-pressed',!!info.map_image_live);
     var el=document.getElementById('entityLangSel'); if(el&&info.lang){ el.value=info.lang; el.setAttribute('data-prev',info.lang); }
   }).catch(function(){});

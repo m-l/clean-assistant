@@ -12,6 +12,7 @@ import datetime
 import json
 import os
 import socket
+import sys
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -34,6 +35,28 @@ from backend.cloud_stub import LocalCloud
 
 STATIC = Path(__file__).parent / "static"
 env = load_env()
+
+
+class _Timestamped:
+    """Antepone fecha y hora a cada línea del log (petición de @zjuanma, #15)."""
+    def __init__(self, stream):
+        self._s, self._bol = stream, True
+
+    def write(self, text):
+        out = []
+        for part in text.splitlines(keepends=True):
+            if self._bol:
+                out.append(time.strftime("%Y-%m-%d %H:%M:%S "))
+            out.append(part)
+            self._bol = part.endswith("\n")
+        return self._s.write("".join(out))
+
+    def __getattr__(self, name):
+        return getattr(self._s, name)
+
+
+if not isinstance(sys.stdout, _Timestamped):
+    sys.stdout = _Timestamped(sys.stdout)
 
 
 def _apply_host_timezone():
@@ -1034,7 +1057,7 @@ async def lifespan(app: FastAPI):
     mqtt.stop()
 
 
-app = FastAPI(title="Clean Assistant", version="0.31.0", lifespan=lifespan)
+app = FastAPI(title="Clean Assistant", version="0.31.1", lifespan=lifespan)
 
 
 @app.get("/api/state")

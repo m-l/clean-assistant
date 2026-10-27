@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.31.1
+- **Conga 7090: limpiar habitaciones como lo hace su app** (#15, @zjuanma). En el 7090, `setRoomClean`
+  funciona solo a veces; la app oficial limpia habitaciones *ejecutando un plan* (`setRoomCleanPlan`),
+  que sí es fiable. Clean Assistant hace ahora lo mismo en ese modelo, con la potencia, el agua, la mopa
+  y la doble pasada elegidas.
+- **Log con fecha y hora** en cada línea.
+
 ## 0.31.0
 Gracias a la ingeniería inversa de las apps oficiales de @mactron254 (#12):
 - **Conga 3890: limpiar habitaciones** (#14). Su app no tiene orden directa: lanza un horario de un

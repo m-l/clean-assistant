@@ -44,6 +44,7 @@ class RealRobot:
         self.orders = []               # horarios REALES guardados en el robot (getOrder6090)
         self.rooms_meta = lambda: {}   # {room_id: {name,type,material}} (app.py lo enlaza al mapa)
         self._oneoff = None            # horario inmediato pendiente de borrar {orderid, ts, started}
+        self._prefs = {}               # últimos set_preference enviados {ctrltype: valor}
         self.on_update = None          # callback opcional (estado -> push)
         self.on_map = None             # callback opcional (mapa -> push)
         self.on_pose = None            # callback opcional (solo pose -> push ligero)
@@ -77,6 +78,15 @@ class RealRobot:
                                           self.rooms_meta(), self.cfg.project_type)
             self._oneoff = {"orderid": control["order"]["orderid"], "ts": time.time(), "started": False}
             self.log("  [robot] este modelo limpia habitaciones con un horario inmediato (como su app)")
+        elif (control.get("control") == "setRoomClean" and control.get("ctrlValue") == 1
+                and self.cfg.project_type in cmd.ROOMS_AS_PLAN and self.state.map_head_id):
+            p = self._prefs
+            control = cmd.run_plan(control.get("roomsID") or [], self.state.map_head_id,
+                                   self.rooms_meta(), bool(control.get("clean_type")),
+                                   p.get(1, 2), p.get(2, 10), p.get(15, 0), self.cfg.project_type)
+            self.log("  [robot] este modelo limpia habitaciones ejecutando un plan (como su app)")
+        elif control.get("control") == "set_preference":
+            self._prefs[control.get("ctrltype")] = control.get("value")
         with self._lock:
             sock = self._sock
         if not sock:

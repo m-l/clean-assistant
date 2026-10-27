@@ -298,6 +298,11 @@ def decode_map(frame: bytes) -> dict:
     return build_map(_parse_protobuf(_extract_zlib(frame)))
 
 
+# al limpiar, el firmware marca lo ya limpiado de cada habitación como un segmento sin nombre con
+# id + 50 (Dormitorio 10 -> 60, Baño 11 -> 61...): esas celdas siguen siendo de su habitación
+CLEANED_OFFSET = 50
+
+
 def build_map(info: dict, W: int = GRID_W, H: int = GRID_H) -> dict:
     """Rejilla + habitaciones + poses -> mapa para el frontend. Lo comparten la gen. nueva
     (decode_map) y la legacy (conga_core/legacy), que usan la misma rejilla y valores.
@@ -343,9 +348,20 @@ def build_map(info: dict, W: int = GRID_W, H: int = GRID_H) -> dict:
         dst = (y - miny) * w
         cropped[dst:dst + w] = grid[src:src + w]
 
+    # centro y caja de cada habitación con nombre contando también su parte ya limpiada; si no, la
+    # etiqueta se desplaza (y descentra) a medida que el robot limpia
+    acc = dict(rp)
+    for rid in names:
+        c = rp.get(rid + CLEANED_OFFSET)
+        if c is None or (rid + CLEANED_OFFSET) in names:
+            continue
+        r = rp.get(rid)
+        acc[rid] = c[:] if r is None else [min(r[0], c[0]), min(r[1], c[1]), max(r[2], c[2]),
+                                           max(r[3], c[3]), r[4] + c[4], r[5] + c[5], r[6] + c[6]]
+
     rooms = []
-    for rid in sorted(rp):
-        r = rp[rid]
+    for rid in sorted(acc):
+        r = acc[rid]
         cnt = r[4]
         mt = meta.get(rid)
         rooms.append({

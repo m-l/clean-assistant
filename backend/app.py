@@ -440,13 +440,13 @@ def _track_session():
                 return None
             ts = time.time()
             sched = None if (ts - _clean_trigger["ts"] < 90) else _match_schedule(ts)
-            _session[0] = {"start": ts, "rooms": set(), "area": 0.0, "time": 0,
+            _session[0] = {"start": ts, "rooms": [], "area": 0.0, "time": 0,
                            "type": "programada" if sched else "manual", "sched": sched,
                            "map_id": s.map_head_id, "last_active": ts}
         ss = _session[0]
         ss["last_active"] = time.time()
-        if s.cleaning_room:
-            ss["rooms"].add(int(s.cleaning_room))
+        if s.cleaning_room and int(s.cleaning_room) not in ss["rooms"]:
+            ss["rooms"].append(int(s.cleaning_room))      # en el orden en que el robot las limpia
         if s.area and s.area > ss["area"]:
             ss["area"] = s.area
         if s.clean_time and s.clean_time > ss["time"]:
@@ -468,7 +468,7 @@ def _finish_session(ss):
     dt = datetime.datetime.fromtimestamp(ss["start"])
     days = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
     _remember_rooms()                             # refresca la caché con el mapa cargado ahora
-    rooms = sorted(ss["rooms"])
+    rooms = list(ss["rooms"])
     mid = ss.get("map_id")
     # resuelve los nombres contra el mapa de ESTA limpieza (no el activo); los IDs se repiten entre
     # mapas, así que usar el mapa activo daría nombres erróneos o "Hab N" si se cambió de mapa/reconectó.
@@ -1057,7 +1057,7 @@ async def lifespan(app: FastAPI):
     mqtt.stop()
 
 
-app = FastAPI(title="Clean Assistant", version="0.31.1", lifespan=lifespan)
+app = FastAPI(title="Clean Assistant", version="0.31.2", lifespan=lifespan)
 
 
 @app.get("/api/state")

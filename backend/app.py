@@ -235,6 +235,13 @@ PREFS_PATH = _data("prefs.json")
 # /api/prefs/lang cuando el usuario lo cambia ahí, así que ambos quedan sincronizados.
 _ui_prefs = {"map_image_live": False, "lang": "es"}
 
+# sombra de "próxima limpieza" (mqtt.prefs: fan/water/mop/mode/twice/turbo_carpet -- ver
+# mqtt_bridge.py). Se cargan aquí pero el puente MQTT todavía no existe en este punto del
+# arranque (_load_prefs() corre antes de crear `mqtt`), así que se guardan en este dict de paso
+# y se vuelcan sobre mqtt.prefs justo después de construirlo, más abajo.
+_loaded_clean_prefs = {}
+_CLEAN_PREF_KEYS = ("fan", "water", "mop", "mode", "twice", "turbo_carpet")
+
 
 def _load_prefs():
     try:
@@ -258,6 +265,11 @@ def _load_prefs():
         robot.state.auto_upgrade = robot.ota_enforce
     _ui_prefs["map_image_live"] = bool(p.get("map_image_live", False))
     _ui_prefs["lang"] = p.get("lang") if p.get("lang") in VALID_LANGS else "es"
+    cp = p.get("clean_prefs")
+    if isinstance(cp, dict):
+        for k in _CLEAN_PREF_KEYS:
+            if k in cp:
+                _loaded_clean_prefs[k] = cp[k]
 
 
 def _save_prefs():
@@ -267,7 +279,8 @@ def _save_prefs():
                        "base_type": robot.state.base_type,
                        "ota": getattr(robot, "ota_enforce", 0),
                        "map_image_live": _ui_prefs["map_image_live"],
-                       "lang": _ui_prefs["lang"]}, f)
+                       "lang": _ui_prefs["lang"],
+                       "clean_prefs": {k: mqtt.prefs.get(k) for k in _CLEAN_PREF_KEYS}}, f)
     except Exception:
         pass
 
@@ -573,6 +586,17 @@ mqtt.battery_provider = battery_health.summary
 mqtt.sensors_provider = sensor_care.summary
 mqtt.sensors_reset = sensor_care.reset
 mqtt.lang_provider = lambda: _ui_prefs["lang"]        # idioma de las entidades/opciones en HA
+mqtt.prefs.update(_loaded_clean_prefs)                # restaura fan/water/mop/mode/twice/turbo
+                                                       # guardados (si no hay nada guardado, se
+                                                       # quedan los DEFAULT_* / "Auto" de siempre)
+
+
+def _state_dict():
+    """robot.state + la sombra de "próxima limpieza" (mqtt.prefs), para que la web pueda
+    pintar el Modo/Succión/Agua/Mopa realmente activos en vez de asumir los de fábrica."""
+    d = robot.state.to_dict()
+    d["prefs"] = {k: mqtt.prefs.get(k) for k in _CLEAN_PREF_KEYS}
+    return d
 # mqtt.ha_notify_provider se asigna más abajo, junto a _on_mqtt_connectivity_change (necesita
 # _supervisor_post, definida más adelante en este archivo).
 
@@ -643,7 +667,7 @@ def _optimistic_state(action: str, p: dict):
 
 
 async def broadcast():
-    msg = json.dumps({"type": "state", "state": robot.state.to_dict()})
+    msg = json.dumps({"type": "state", "state": _state_dict()})
     for ws in list(clients):
         try:
             await ws.send_text(msg)
@@ -1075,7 +1099,7 @@ app = FastAPI(title="Clean Assistant", version="0.30.9", lifespan=lifespan)
 
 @app.get("/api/state")
 def get_state():
-    return robot.state.to_dict()
+    return _state_dict()
 
 
 @app.get("/api/info")
@@ -1971,7 +1995,7 @@ async def identity_import(payload: dict):
 async def websocket(ws: WebSocket):
     await ws.accept()
     clients.add(ws)
-    await ws.send_text(json.dumps({"type": "state", "state": robot.state.to_dict()}))
+    await ws.send_text(json.dumps({"type": "state", "state": _state_dict()}))
     await ws.send_text(json.dumps({"type": "view", "view": view_settings}))
     await ws.send_text(json.dumps({"type": "link", "mode": getattr(robot, "link", "local")}))
     if robot.map or getattr(robot, "map_empty", False):

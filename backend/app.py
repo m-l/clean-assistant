@@ -12,6 +12,7 @@ import datetime
 import json
 import os
 import socket
+import sys
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -35,6 +36,28 @@ from backend.i18n import VALID_LANGS, t
 
 STATIC = Path(__file__).parent / "static"
 env = load_env()
+
+
+class _Timestamped:
+    """Antepone fecha y hora a cada línea del log (petición de @zjuanma, #15)."""
+    def __init__(self, stream):
+        self._s, self._bol = stream, True
+
+    def write(self, text):
+        out = []
+        for part in text.splitlines(keepends=True):
+            if self._bol:
+                out.append(time.strftime("%Y-%m-%d %H:%M:%S "))
+            out.append(part)
+            self._bol = part.endswith("\n")
+        return self._s.write("".join(out))
+
+    def __getattr__(self, name):
+        return getattr(self._s, name)
+
+
+if not isinstance(sys.stdout, _Timestamped):
+    sys.stdout = _Timestamped(sys.stdout)
 
 
 def _apply_host_timezone():
@@ -423,13 +446,13 @@ def _track_session():
                 return None
             ts = time.time()
             sched = None if (ts - _clean_trigger["ts"] < 90) else _match_schedule(ts)
-            _session[0] = {"start": ts, "rooms": set(), "area": 0.0, "time": 0,
+            _session[0] = {"start": ts, "rooms": [], "area": 0.0, "time": 0,
                            "type": "programada" if sched else "manual", "sched": sched,
                            "map_id": s.map_head_id, "last_active": ts}
         ss = _session[0]
         ss["last_active"] = time.time()
-        if s.cleaning_room:
-            ss["rooms"].add(int(s.cleaning_room))
+        if s.cleaning_room and int(s.cleaning_room) not in ss["rooms"]:
+            ss["rooms"].append(int(s.cleaning_room))      # en el orden en que el robot las limpia
         if s.area and s.area > ss["area"]:
             ss["area"] = s.area
         if s.clean_time and s.clean_time > ss["time"]:
@@ -451,7 +474,7 @@ def _finish_session(ss):
     dt = datetime.datetime.fromtimestamp(ss["start"])
     days = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
     _remember_rooms()                             # refresca la caché con el mapa cargado ahora
-    rooms = sorted(ss["rooms"])
+    rooms = list(ss["rooms"])
     mid = ss.get("map_id")
     # resuelve los nombres contra el mapa de ESTA limpieza (no el activo); los IDs se repiten entre
     # mapas, así que usar el mapa activo daría nombres erróneos o "Hab N" si se cambió de mapa/reconectó.
@@ -1047,7 +1070,7 @@ async def lifespan(app: FastAPI):
 # Supervisor) y hay que subirlo a mano junto a esa -- llevaba desde 0.30.0 sin tocarse pese a
 # muchos bumps de config.yaml, lo que hacía que el pie de la web (appVer) pareciera confirmar una
 # versión vieja incluso cuando el add-on sí tenía código nuevo. Mantenerlos sincronizados.
-app = FastAPI(title="Clean Assistant", version="0.30.8", lifespan=lifespan)
+app = FastAPI(title="Clean Assistant", version="0.30.9", lifespan=lifespan)
 
 
 @app.get("/api/state")

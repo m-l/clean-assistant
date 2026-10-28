@@ -26,6 +26,9 @@ link.json
 identity.json
 firstrun.json
 room_names.json
+prefs.json
+battery_health.json
+sensor_care.json
 
 # ===== Capturas de pantalla de la app (muestran tu casamapadatos) =====
 Capturasdepantallaclean

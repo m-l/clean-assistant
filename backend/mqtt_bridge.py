@@ -22,6 +22,7 @@ import time
 AVAIL_OFFLINE_GRACE_S = 120.0
 
 from conga_core import commands as cmd
+from backend.i18n import t, VALID_LANGS
 
 # Estados válidos del esquema 'state' de la entidad vacuum de HA (schema: state). HA SOLO acepta
 # estos seis; 'mapping' NO es válido (HA lo rechaza con "Received unsupported state"), por eso el
@@ -33,6 +34,28 @@ _VACUUM_STATES = {"cleaning", "docked", "paused", "idle", "returning", "error"}
 DUST_FREQ = {"Nunca": -1, "Después de cada limpieza": 0, "Cada 30 minutos": 30,
              "Cada 60 minutos": 60, "Cada 90 minutos": 90, "Cada 2 horas": 120}
 DUST_FREQ_REV = {v: k for k, v in DUST_FREQ.items()}
+
+# ---------------- etiquetas (ES) de las opciones de los `select`, por idioma (i18n) ----------------
+# La CLAVE de cada entrada sigue siendo la que espera conga_core.commands (lo que viaja al robot);
+# el VALOR es el texto en español que se le pasa a t() para traducirlo a mostrar en HA.
+#
+# "Off" en succión (conga_core.commands.FAN["Off"]=0) es "apagar de verdad" SOLO en el backend
+# "new" (conga_core/commands.py, confirmado por ingeniería inversa sobre el propio 8090: se manda
+# set_preference(1, 0) tal cual). En el backend "legacy" NO lo es: conga_core/legacy/robot.py
+# remapea ese mismo 0 a 13 ("máximo" en la tabla real capturada de la app oficial) antes de
+# mandarlo al robot, así que ahí sí es un nivel de potencia más, no un apagado. Antes esta
+# etiqueta decía "Máx" para los dos backends (copiado del error que tenía la propia interfaz web,
+# ver backend/static/index.html); en el backend nuevo eso hacía que elegir "Máx" apagara
+# realmente la succión. Ver MqttBridge.legacy / self._fan_labels (__init__).
+FAN_LABELS_NEW = {"Off": "Off", "Eco": "Eco", "Normal": "Normal", "Turbo": "Turbo"}
+FAN_LABELS_LEGACY = {"Off": "Máx", "Eco": "Eco", "Normal": "Normal", "Turbo": "Turbo"}
+WATER_LABELS = {"Off": "Off", "Bajo": "Bajo", "Medio": "Medio", "Alto": "Alto"}
+MOP_LABELS = {"Off": "Off", "Estándar": "Estándar", "Fuerte": "Fuerte", "Potente": "Potente"}
+CLEAN_MODE_LABELS = {"Auto": "Auto", "Limpieza completa": "Limpieza completa",
+                      "Fregado": "Fregado", "Bordes": "Bordes", "Espiral": "Espiral",
+                      "Espiral cuadrada": "Espiral cuadrada", "Punto": "Punto"}
+BASE_TYPE_LABELS = {"Base de carga": "Base de carga", "Colector automático": "Colector automático"}
+DUST_FREQ_LABELS = {k: k for k in DUST_FREQ}
 
 
 # Modelo del robot para Home Assistant, según el project_type (aprendido del propio robot por
@@ -78,6 +101,10 @@ class MqttBridge:
         self.schedules = schedules
         self._map_head_id = map_head_id
         self._rooms = rooms_provider
+        # ver el comentario sobre FAN_LABELS_NEW/FAN_LABELS_LEGACY: el significado real de
+        # FAN["Off"] depende del backend (nuevo = apagado real; legacy = remapeado a "máximo").
+        self.legacy = (env("CONGA_BACKEND", "new") or "new").lower() == "legacy"
+        self._fan_labels = FAN_LABELS_LEGACY if self.legacy else FAN_LABELS_NEW
         self.log = log
         self._persist = persist        # callback opcional para persistir prefs (frecuencia/base)
         self.host = env("MQTT_HOST")
@@ -105,6 +132,8 @@ class MqttBridge:
         self.sensors_reset = None       # callback -> 'Hecho' (sensores limpios)
         self._sensors_last = None
         self._battery_last = None
+        self.lang_provider = None       # callback -> código de idioma ('es','en',...), ver backend/i18n.py
+        self._opt_reverse = {}          # {clave select: {opción traducida -> clave canónica}}, por idioma actual
         self.disc = "homeassistant"
         self.client = None
         # preferencias "para la próxima limpieza" (sombra local: el robot no las reporta)
@@ -135,6 +164,29 @@ class MqttBridge:
         if pt in CONGA_MODELS:
             return CONGA_MODELS[pt]
         return ("Conga", f"Conga ({pt})" if pt else "Conga")
+
+    def _lang(self) -> str:
+        """Idioma actual para las etiquetas publicadas en HA ('es' por defecto). Viene de
+        `lang_provider` (backend/app.py lo conecta a la preferencia persistida, la misma que
+        elige el selector de idioma de la interfaz web -- issue pedido por m-l)."""
+        try:
+            lang = self.lang_provider() if self.lang_provider else None
+        except Exception:
+            lang = None
+        return lang if lang in VALID_LANGS else "es"
+
+    def _localized_options(self, canon_labels: dict):
+        """De {clave_canónica: texto_es} (self._fan_labels, WATER_LABELS...) construye, en el idioma
+        actual, la lista de `options` a publicar en HA y el mapa inverso {opción_traducida ->
+        clave_canónica} que _on_message necesita para volver a la clave que entiende
+        conga_core.commands cuando HA manda de vuelta el valor elegido."""
+        lang = self._lang()
+        options, reverse = [], {}
+        for key, es_label in canon_labels.items():
+            label = t(lang, es_label)
+            options.append(label)
+            reverse[label] = key
+        return options, reverse
 
     def enabled(self) -> bool:
         return bool(self.host)
@@ -201,6 +253,7 @@ class MqttBridge:
             self._legacy_cleaned = True
             for legacy in {"conga_0", "conga_123456", f"conga_{self._env_did}"} - {uid}:
                 self._clear_discovery(legacy)
+        lang = self._lang()
         dev_name, dev_model = self._model_names()
         device = {"identifiers": [uid], "name": dev_name, "manufacturer": "Cecotec",
                   "model": dev_model, "sw_version": "clean-assistant"}
@@ -212,11 +265,11 @@ class MqttBridge:
 
         # sensores
         for name, sid, topic, tmpl, unit, dclass in (
-            ("Conga Batería", "bat", self.t_state,
+            (f"Conga {t(lang, 'Batería')}", "bat", self.t_state,
              "{% if value_json.battery_level is defined %}{{ value_json.battery_level }}{% endif %}",
              "%", "battery"),
-            ("Conga Área limpiada", "area", f"conga/{node}/area", "{{ value }}", "m²", None),
-            ("Conga Tiempo limpieza", "time", f"conga/{node}/time", "{{ value }}", "min", "duration"),
+            (f"Conga {t(lang, 'Área limpiada')}", "area", f"conga/{node}/area", "{{ value }}", "m²", None),
+            (f"Conga {t(lang, 'Tiempo limpieza')}", "time", f"conga/{node}/time", "{{ value }}", "min", "duration"),
         ):
             cfg = {"name": name, "unique_id": f"{uid}_{sid}", "state_topic": topic,
                    "value_template": tmpl}
@@ -228,14 +281,14 @@ class MqttBridge:
         # posición del robot (x/y/ángulo en celdas del mapa) para floorplans/tarjetas externas.
         # El estado es "x,y"; x, y y angle van también como atributos (json_attributes_topic).
         self._disc("sensor", f"{uid}_pose", {
-            "name": "Conga Posición", "unique_id": f"{uid}_pose",
+            "name": f"Conga {t(lang, 'Posición')}", "unique_id": f"{uid}_pose",
             "state_topic": f"conga/{node}/pose",
             "value_template": "{{ value_json.x }},{{ value_json.y }}",
             "json_attributes_topic": f"conga/{node}/pose", "icon": "mdi:crosshairs-gps"})
         self.publish_pose()
         # habitación que el robot está limpiando ahora (nombre), para tarjetas/automatizaciones.
         self._disc("sensor", f"{uid}_room_now", {
-            "name": "Conga Habitación actual", "unique_id": f"{uid}_room_now",
+            "name": f"Conga {t(lang, 'Habitación actual')}", "unique_id": f"{uid}_room_now",
             "state_topic": f"conga/{node}/room_now", "icon": "mdi:home-map-marker"})
         self._pub(f"conga/{node}/room_now", self._current_room_name())
         # mapa (geometría + traza) para tarjetas/floorplans de HA. Estado = nº de habitaciones
@@ -243,7 +296,7 @@ class MqttBridge:
         # margen (throttle) para no llenar el recorder mientras el robot limpia. SIN la rejilla de
         # píxeles (esa sigue en GET /api/map).
         self._disc("sensor", f"{uid}_map", {
-            "name": "Conga Mapa", "unique_id": f"{uid}_map",
+            "name": f"Conga {t(lang, 'Mapa')}", "unique_id": f"{uid}_map",
             "state_topic": f"conga/{node}/map",
             "value_template": "{{ (value_json.rooms | default([])) | length }}",
             "json_attributes_topic": f"conga/{node}/map", "icon": "mdi:floor-plan"})
@@ -251,13 +304,13 @@ class MqttBridge:
         # el mapa como IMAGEN (PNG), para tarjetas de imagen/aspiradora; con la calibración
         # píxel <-> metros en los atributos (tarjetas de mapa interactivas)
         self._disc("image", f"{uid}_map_image", {
-            "name": "Conga Mapa imagen", "unique_id": f"{uid}_map_image",
+            "name": f"Conga {t(lang, 'Mapa imagen')}", "unique_id": f"{uid}_map_image",
             "image_topic": f"conga/{node}/map_image", "content_type": "image/png",
             "json_attributes_topic": f"conga/{node}/map_image/attr", "icon": "mdi:map"})
         self.publish_map_image(force=True)
         # aviso de falta de agua (faultCode 525) como binary_sensor
         self._disc("binary_sensor", f"{uid}_low_water", {
-            "name": "Conga Falta agua", "unique_id": f"{uid}_low_water",
+            "name": f"Conga {t(lang, 'Falta agua')}", "unique_id": f"{uid}_low_water",
             "state_topic": self.t_state, "value_template": "{{ value_json.low_water }}",
             "payload_on": "ON", "payload_off": "OFF",
             "device_class": "problem", "icon": "mdi:water-alert"})
@@ -266,12 +319,12 @@ class MqttBridge:
         # salud de la batería (calculada por CA a partir del historial de cargas y limpiezas)
         bt = f"conga/{node}/battery_health"
         for key, name, unit, icon, tpl in (
-                ("bh_cycles", "Conga Ciclos de batería", None, "mdi:battery-sync", "{{ value_json.cycles }}"),
-                ("bh_health", "Conga Salud de batería", "%", "mdi:battery-heart-variant",
+                ("bh_cycles", f"Conga {t(lang, 'Ciclos de batería')}", None, "mdi:battery-sync", "{{ value_json.cycles }}"),
+                ("bh_health", f"Conga {t(lang, 'Salud de batería')}", "%", "mdi:battery-heart-variant",
                  "{{ value_json.health if value_json.health is not none else 'unknown' }}"),
-                ("bh_drain", "Conga Consumo de batería", "%/m²", "mdi:battery-arrow-down",
+                ("bh_drain", f"Conga {t(lang, 'Consumo de batería')}", "%/m²", "mdi:battery-arrow-down",
                  "{{ value_json.pct_per_m2 if value_json.pct_per_m2 is not none else 'unknown' }}"),
-                ("bh_charge", "Conga Velocidad de carga", "%/min", "mdi:battery-charging",
+                ("bh_charge", f"Conga {t(lang, 'Velocidad de carga')}", "%/min", "mdi:battery-charging",
                  "{{ value_json.charge_rate_low if value_json.charge_rate_low is not none else 'unknown' }}")):
             cfg = {"name": name, "unique_id": f"{uid}_{key}", "state_topic": bt,
                    "value_template": tpl, "json_attributes_topic": bt, "icon": icon}
@@ -285,57 +338,66 @@ class MqttBridge:
         # aviso de limpieza de sensores (cada 35 h de trabajo; lo cuenta CA, vale para todos)
         sc = f"conga/{node}/sensor_care"
         self._disc("sensor", f"{uid}_sensor_hours", {
-            "name": "Conga Horas desde limpiar sensores", "unique_id": f"{uid}_sensor_hours",
+            "name": f"Conga {t(lang, 'Horas desde limpiar sensores')}", "unique_id": f"{uid}_sensor_hours",
             "state_topic": sc, "value_template": "{{ value_json.hours }}",
             "json_attributes_topic": sc, "unit_of_measurement": "h", "icon": "mdi:eye-refresh"})
         self._disc("binary_sensor", f"{uid}_sensor_due", {
-            "name": "Conga Limpiar sensores", "unique_id": f"{uid}_sensor_due",
+            "name": f"Conga {t(lang, 'Limpiar sensores')}", "unique_id": f"{uid}_sensor_due",
             "state_topic": sc, "value_template": "{{ 'ON' if value_json.due else 'OFF' }}",
             "payload_on": "ON", "payload_off": "OFF",
             "device_class": "problem", "icon": "mdi:eye-refresh"})
         self._disc("button", f"{uid}_sensor_reset", {
-            "name": "Conga Sensores limpiados", "unique_id": f"{uid}_sensor_reset",
+            "name": f"Conga {t(lang, 'Sensores limpiados')}", "unique_id": f"{uid}_sensor_reset",
             "command_topic": f"{sc}/reset", "payload_press": "reset", "icon": "mdi:restart"})
         self._sensors_last = None
         self.publish_sensors()
         self._disc("sensor", f"{uid}_warning", {
-            "name": "Conga Aviso", "unique_id": f"{uid}_warning",
+            "name": f"Conga {t(lang, 'Aviso')}", "unique_id": f"{uid}_warning",
             "state_topic": f"conga/{node}/warning", "icon": "mdi:alert"})
-        self._pub(f"conga/{node}/warning", getattr(self.robot.state, "warning", None) or "")
+        # el valor publicado aquí (no solo el nombre/icono de la entidad) debe traducirse: es el
+        # texto que ve el usuario como estado del sensor "Conga Aviso" (ver WARN_MESSAGES en
+        # conga_core/state.py y el bloque de traducciones correspondiente en backend/i18n.py).
+        self._pub(f"conga/{node}/warning", t(lang, getattr(self.robot.state, "warning", None) or ""))
         for key, name, icon in (("main_brush", "Cepillo central", "mdi:broom"),
                                 ("side_brush", "Cepillo lateral", "mdi:broom"),
                                 ("filter", "Filtro", "mdi:air-filter"),
                                 ("dishcloth", "Mopa", "mdi:water")):
+            label = t(lang, name)
             self._disc("sensor", f"{uid}_cons_{key}", {
-                "name": f"Conga {name}", "unique_id": f"{uid}_cons_{key}",
+                "name": f"Conga {label}", "unique_id": f"{uid}_cons_{key}",
                 "state_topic": f"conga/{node}/consumable/{key}",
                 "unit_of_measurement": "%", "icon": icon})
             self._disc("button", f"{uid}_creset_{key}", {
-                "name": f"Conga Restablecer {name}", "unique_id": f"{uid}_creset_{key}",
+                "name": f"Conga {t(lang, 'Restablecer')} {label}", "unique_id": f"{uid}_creset_{key}",
                 "command_topic": f"conga/{node}/consumable/{key}/reset",
                 "payload_press": key, "icon": "mdi:restart"})
 
-        # botones de limpieza por habitación (del mapa vivo)
+        # botones de limpieza por habitación (del mapa vivo). El nombre de la habitación es
+        # DATO del usuario y no se traduce (igual que en la web); solo "Limpiar"/"Habitación".
         for rid, meta in (self._rooms() or {}).items():
-            rname = (meta or {}).get("name") or f"Habitación {rid}"
+            rname = (meta or {}).get("name") or f"{t(lang, 'Habitación')} {rid}"
             self._disc("button", f"{uid}_room_{rid}", {
-                "name": f"Limpiar {rname}", "unique_id": f"{uid}_room_{rid}",
+                "name": f"{t(lang, 'Limpiar')} {rname}", "unique_id": f"{uid}_room_{rid}",
                 "command_topic": f"conga/{node}/room_command", "payload_press": str(rid),
                 "icon": "mdi:broom"})
 
-        # selectores: potencia / agua / mopa / modo / tipo de base
-        for key, name, opts, icon in (
-            ("fan", "Potencia succión", list(cmd.FAN), "mdi:fan"),
-            ("water", "Nivel agua", list(cmd.WATER), "mdi:water"),
-            ("mop", "Vibración mopa", list(cmd.MOP), "mdi:vibrate"),
-            ("mode", "Modo de limpieza", list(cmd.CLEAN_MODES), "mdi:broom"),
-            ("base_type", "Tipo de base", list(cmd.BASE_TYPES), "mdi:home-import-outline"),
+        # selectores: potencia / agua / mopa / modo / tipo de base. Las OPCIONES se traducen,
+        # pero la clave canónica que entiende conga_core.commands se guarda en _opt_reverse
+        # para poder volver a ella cuando HA manda de vuelta el valor elegido (_on_message).
+        for key, name, labels, icon in (
+            ("fan", "Potencia succión", self._fan_labels, "mdi:fan"),
+            ("water", "Nivel agua", WATER_LABELS, "mdi:water"),
+            ("mop", "Vibración mopa", MOP_LABELS, "mdi:vibrate"),
+            ("mode", "Modo de limpieza", CLEAN_MODE_LABELS, "mdi:broom"),
+            ("base_type", "Tipo de base", BASE_TYPE_LABELS, "mdi:home-import-outline"),
         ):
+            opts, reverse = self._localized_options(labels)
+            self._opt_reverse[key] = reverse
             self._disc("select", f"{uid}_sel_{key}", {
-                "name": f"Conga {name}", "unique_id": f"{uid}_sel_{key}",
+                "name": f"Conga {t(lang, name)}", "unique_id": f"{uid}_sel_{key}",
                 "command_topic": f"conga/{node}/pref/{key}/set",
                 "state_topic": f"conga/{node}/pref/{key}", "options": opts, "icon": icon})
-            self._pub(f"conga/{node}/pref/{key}", self.prefs[key])
+            self._pub(f"conga/{node}/pref/{key}", t(lang, labels.get(self.prefs[key], self.prefs[key])))
 
         # switches: doble pasada, turbo alfombras, no molestar, voz, OTA
         for key, name, icon in (("twice", "Doble pasada (x2)", "mdi:repeat"),
@@ -344,7 +406,7 @@ class MqttBridge:
                                 ("voice", "Voz", "mdi:account-voice"),
                                 ("ota", "Actualizaciones automáticas", "mdi:cloud-download")):
             self._disc("switch", f"{uid}_{key}", {
-                "name": f"Conga {name}", "unique_id": f"{uid}_{key}",
+                "name": f"Conga {t(lang, name)}", "unique_id": f"{uid}_{key}",
                 "command_topic": f"conga/{node}/{key}/set",
                 "state_topic": f"conga/{node}/{key}",
                 "payload_on": "on", "payload_off": "off", "icon": icon})
@@ -353,30 +415,32 @@ class MqttBridge:
 
         # number: volumen de voz; text: horas de no molestar
         self._disc("number", f"{uid}_volume", {
-            "name": "Conga Volumen voz", "unique_id": f"{uid}_volume",
+            "name": f"Conga {t(lang, 'Volumen voz')}", "unique_id": f"{uid}_volume",
             "command_topic": f"conga/{node}/voice_volume/set",
             "state_topic": f"conga/{node}/voice_volume",
             "min": 0, "max": 10, "step": 1, "icon": "mdi:volume-high"})
         for part, name, icon in (("begin", "No molestar inicio", "mdi:weather-night"),
                                 ("end", "No molestar fin", "mdi:weather-sunny")):
             self._disc("text", f"{uid}_quiet_{part}", {
-                "name": f"Conga {name}", "unique_id": f"{uid}_quiet_{part}",
+                "name": f"Conga {t(lang, name)}", "unique_id": f"{uid}_quiet_{part}",
                 "command_topic": f"conga/{node}/quiet_{part}/set",
                 "state_topic": f"conga/{node}/quiet_{part}",
                 "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$", "icon": icon})
 
         # botón: vaciar base
         self._disc("button", f"{uid}_dust", {
-            "name": "Conga Vaciar base", "unique_id": f"{uid}_dust",
+            "name": f"Conga {t(lang, 'Vaciar base')}", "unique_id": f"{uid}_dust",
             "command_topic": f"conga/{node}/dust_action", "payload_press": "1",
             "icon": "mdi:delete-empty"})
 
         # select: frecuencia de autovaciado (igual que en la web)
+        opts, reverse = self._localized_options(DUST_FREQ_LABELS)
+        self._opt_reverse["dust_freq"] = reverse
         self._disc("select", f"{uid}_dust_freq", {
-            "name": "Conga Frecuencia de vaciado", "unique_id": f"{uid}_dust_freq",
+            "name": f"Conga {t(lang, 'Frecuencia de vaciado')}", "unique_id": f"{uid}_dust_freq",
             "command_topic": f"conga/{node}/dust_freq/set",
             "state_topic": f"conga/{node}/dust_freq",
-            "options": list(DUST_FREQ), "icon": "mdi:delete-clock"})
+            "options": opts, "icon": "mdi:delete-clock"})
         self._pub_dust_freq()
 
         # horarios: un switch por plan del MAPA ACTIVO (igual que la web). El object_id del topic
@@ -389,7 +453,7 @@ class MqttBridge:
             pid = p["id"]
             obj = f"{uid}_sched_{_safe_id(pid)}"
             self._disc("switch", obj, {
-                "name": f"Horario {p.get('name', pid)}", "unique_id": obj,
+                "name": f"{t(lang, 'Horario')} {p.get('name', pid)}", "unique_id": obj,
                 "command_topic": f"conga/{node}/sched/{pid}/set",
                 "state_topic": f"conga/{node}/sched/{pid}",
                 "payload_on": "on", "payload_off": "off", "icon": "mdi:calendar-clock"})
@@ -397,7 +461,7 @@ class MqttBridge:
             # botón "Ejecutar": lanza YA las habitaciones del plan (sin esperar a su hora).
             run_obj = f"{uid}_planrun_{_safe_id(pid)}"
             self._disc("button", run_obj, {
-                "name": f"Ejecutar {p.get('name', pid)}", "unique_id": run_obj,
+                "name": f"{t(lang, 'Ejecutar')} {p.get('name', pid)}", "unique_id": run_obj,
                 "command_topic": f"conga/{node}/plan_run", "payload_press": pid,
                 "icon": "mdi:play-box-multiple"})
 
@@ -436,6 +500,21 @@ class MqttBridge:
             self._pub(f"{self.disc}/{comp}/{obj}/config", "")
         self.log(f"[MQTT] retirado descubrimiento duplicado ({uid})")
 
+    def republish_with_rename(self):
+        """Como publish_discovery(), pero primero BORRA el descubrimiento retenido del uid
+        ACTUAL antes de volver a publicarlo (ver _clear_discovery, pensado originalmente solo
+        para uids viejos/duplicados). Hace falta porque Home Assistant NO actualiza el nombre
+        visible de una entidad MQTT ya registrada solo porque llegue un nuevo discovery con
+        "name" distinto -- se queda con el nombre con el que se creó hasta que la entidad se
+        borra/recrea, o se reinicia HA (comportamiento conocido de core, p. ej.
+        github.com/home-assistant/core/issues/99936). Se usa al cambiar el idioma de las
+        entidades (ver /api/prefs/lang); un simple publish_discovery() ahí dejaría los nombres
+        antiguos pegados hasta el próximo reinicio de HA, que es justo el síntoma reportado."""
+        if not self.client:
+            return
+        self._clear_discovery(self._current_uid())
+        self.publish_discovery()
+
     def note_web_command(self, action, p):
         """Sincroniza la sombra de preferencias en HA cuando el cambio viene de la web."""
         if not self.client:
@@ -443,7 +522,14 @@ class MqttBridge:
         node, v = self.node, p.get("value")
         if action in ("fan", "water", "mop", "mode", "base_type"):
             self.prefs[action] = v
-            self._pub(f"conga/{node}/pref/{action}", v)
+            # publicar la opción TRADUCIDA, no la clave canónica -- las options del select ya
+            # están traducidas (_localized_options en publish_discovery), así que mandar la
+            # clave cruda hace que HA la rechace por no ser una de sus opciones válidas (en
+            # inglés, p. ej.) o, en el backend legacy, incluso en español ("Off" cuando la
+            # opción publicada es "Máx"). Mismo patrón que _pub_dust_freq(). (review PR #18)
+            labels = {"fan": self._fan_labels, "water": WATER_LABELS, "mop": MOP_LABELS,
+                      "mode": CLEAN_MODE_LABELS, "base_type": BASE_TYPE_LABELS}[action]
+            self._pub(f"conga/{node}/pref/{action}", t(self._lang(), labels.get(v, v)))
         elif action == "twice":
             self.prefs["twice"] = bool(v)
             self._pub(f"conga/{node}/twice", "on" if v else "off")
@@ -463,7 +549,7 @@ class MqttBridge:
             return "—"
         meta = self._rooms() or {}
         info = meta.get(rid) or meta.get(str(rid))
-        return (info or {}).get("name") or f"Habitación {rid}"
+        return (info or {}).get("name") or f"{t(self._lang(), 'Habitación')} {rid}"
 
     def _pub_dust_freq(self):
         """Publica el estado del select de frecuencia de vaciado según robot.state.collect_freq."""
@@ -473,7 +559,7 @@ class MqttBridge:
         except (TypeError, ValueError):
             name = None
         if name:
-            self._pub(f"conga/{self.node}/dust_freq", name)
+            self._pub(f"conga/{self.node}/dust_freq", t(self._lang(), name))
 
     def publish_pose(self):
         """Publica la posición del robot {x, y, angle} (celdas del mapa) en conga/<node>/pose,
@@ -634,7 +720,8 @@ class MqttBridge:
             low_water = False
         payload["low_water"] = "ON" if low_water else "OFF"
         self._pub(self.t_state, json.dumps(payload))
-        self._pub(f"conga/{self.node}/warning", s.warning or "")   # aviso/error actual (o vacío)
+        # traducido (ver el comentario equivalente en publish_discovery más arriba)
+        self._pub(f"conga/{self.node}/warning", t(self._lang(), s.warning or ""))
         if s.area is not None:
             self._pub(f"conga/{self.node}/area", s.area)
         if s.clean_time is not None:
@@ -753,23 +840,29 @@ class MqttBridge:
 
             if topic.startswith(f"conga/{node}/pref/") and topic.endswith("/set"):
                 key = topic.split("/")[-2]
+                # HA manda el valor TRADUCIDO (es uno de los `options` publicados); se traduce de
+                # vuelta a la clave canónica que entiende conga_core.commands. Si no se encuentra
+                # (p. ej. un mensaje retenido de antes de cambiar de idioma), se usa tal cual -- ya
+                # era así antes de que existiera la traducción.
+                canon = self._opt_reverse.get(key, {}).get(payload, payload)
                 if key in ("fan", "water", "mop"):
-                    self.prefs[key] = payload
-                    self._cmd({"fan": cmd.fan, "water": cmd.water, "mop": cmd.mop}[key](payload))
+                    self.prefs[key] = canon
+                    self._cmd({"fan": cmd.fan, "water": cmd.water, "mop": cmd.mop}[key](canon))
                 elif key == "mode":
-                    self.prefs["mode"] = payload
-                    self._cmd(cmd.select_mode(payload))
+                    self.prefs["mode"] = canon
+                    self._cmd(cmd.select_mode(canon))
                 elif key == "base_type":
-                    self.prefs["base_type"] = payload
-                    self.robot.state.base_type = payload
-                    self._cmd(cmd.base_type(payload))
+                    self.prefs["base_type"] = canon
+                    self.robot.state.base_type = canon
+                    self._cmd(cmd.base_type(canon))
                     if self._persist:
                         self._persist()
                 self._pub(f"conga/{node}/pref/{key}", payload)
                 return
 
             if topic == f"conga/{node}/dust_freq/set":
-                val = DUST_FREQ.get(payload)
+                canon = self._opt_reverse.get("dust_freq", {}).get(payload, payload)
+                val = DUST_FREQ.get(canon)
                 if val is not None:
                     self._cmd(cmd.dust_freq(val))
                     self.robot.state.collect_freq = val

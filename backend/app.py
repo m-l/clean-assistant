@@ -32,6 +32,7 @@ from backend.battery import BatteryHealth
 from backend.sensors import SensorCare
 from backend.mqtt_bridge import MqttBridge
 from backend.cloud_stub import LocalCloud
+from backend.i18n import VALID_LANGS
 
 STATIC = Path(__file__).parent / "static"
 env = load_env()
@@ -229,7 +230,11 @@ PREFS_PATH = _data("prefs.json")
 
 
 # preferencias propias de Clean Assistant (no del robot): se aplican al puente MQTT al crearlo
-_ui_prefs = {"map_image_live": False}
+# "lang": idioma de las entidades/opciones que el puente MQTT publica en HA (backend/i18n.py).
+# Es el selector de "idioma de entidades" de la Zona de peligro (entityLangSel), NO el selector
+# de idioma de la propia interfaz web (langSel, puramente client-side) -- el front llama a
+# /api/prefs/lang cuando el usuario lo cambia ahí.
+_ui_prefs = {"map_image_live": False, "lang": "es"}
 
 
 def _load_prefs():
@@ -253,6 +258,7 @@ def _load_prefs():
             robot.ota_enforce = 0
         robot.state.auto_upgrade = robot.ota_enforce
     _ui_prefs["map_image_live"] = bool(p.get("map_image_live", False))
+    _ui_prefs["lang"] = p.get("lang") if p.get("lang") in VALID_LANGS else "es"
 
 
 def _save_prefs():
@@ -261,7 +267,8 @@ def _save_prefs():
             json.dump({"collect_freq": robot.state.collect_freq,
                        "base_type": robot.state.base_type,
                        "ota": getattr(robot, "ota_enforce", 0),
-                       "map_image_live": _ui_prefs["map_image_live"]}, f)
+                       "map_image_live": _ui_prefs["map_image_live"],
+                       "lang": _ui_prefs["lang"]}, f)
     except Exception:
         pass
 
@@ -566,6 +573,7 @@ mqtt.view_provider = lambda: view_settings            # la imagen sale con la mi
 mqtt.battery_provider = battery_health.summary
 mqtt.sensors_provider = sensor_care.summary
 mqtt.sensors_reset = sensor_care.reset
+mqtt.lang_provider = lambda: _ui_prefs["lang"]        # idioma de las entidades/opciones en HA
 
 
 def _send_zone_group(group: str):
@@ -1076,7 +1084,8 @@ def get_info():
     return {"version": app.version, "model": model,
             "mode": getattr(robot, "link", "local"),
             "backend": "legacy" if LEGACY else "new",   # la interfaz oculta lo que no aplica
-            "map_image_live": mqtt.map_image_live}
+            "map_image_live": mqtt.map_image_live,
+            "lang": _ui_prefs["lang"]}
 
 
 def _supervisor_get(path: str):
@@ -1254,6 +1263,26 @@ async def set_map_image_live(payload: dict):
     _save_prefs()
     mqtt.publish_map_image(force=True)
     return {"ok": True, "map_image_live": mqtt.map_image_live}
+
+
+@app.post("/api/prefs/lang")
+async def set_lang(payload: dict):
+    """Idioma de los nombres de entidad y opciones que el puente MQTT publica en Home
+    Assistant (backend/i18n.py). Lo llama el selector de "idioma de entidades" de la Zona de
+    peligro (entityLangSel) -- un ajuste aparte del selector de idioma de la propia interfaz
+    web (langSel), que es puramente client-side y no pasa por aquí. Si MQTT está activo, se
+    vuelve a publicar el descubrimiento al momento, sin esperar a la próxima reconexión."""
+    lang = payload.get("value")
+    if lang not in VALID_LANGS:
+        return {"ok": False, "error": "idioma no soportado", "lang": _ui_prefs["lang"]}
+    _ui_prefs["lang"] = lang
+    _save_prefs()
+    if mqtt.client:
+        # no basta con publish_discovery(): HA no refresca el nombre de una entidad MQTT ya
+        # registrada solo porque cambie el "name" del discovery -- hay que borrarla y
+        # recrearla (ver MqttBridge.republish_with_rename).
+        mqtt.republish_with_rename()
+    return {"ok": True, "lang": _ui_prefs["lang"]}
 
 
 @app.get("/api/zones")

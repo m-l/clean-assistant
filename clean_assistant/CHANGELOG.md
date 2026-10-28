@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.31.6
+- **Los nombres del mapa ya no se pisan.** Si dos etiquetas se solapan (p. ej. una habitación pequeña
+  junto a otra), la de la habitación más pequeña se desplaza al hueco libre más cercano.
+- **Actividad:** cambiar de página ya no desplaza el contenido cuando una página es más corta que otra.
+- Los avisos antiguos del historial que se guardaron sin texto (p. ej. «Aviso (código 560)») muestran
+  ahora su descripción.
+
 ## 0.31.5
 Gracias a @m-l (PRs #20 y #23):
 - **Aviso en Home Assistant si Clean Assistant pierde su conexión MQTT.** Crea una notificación en HA en

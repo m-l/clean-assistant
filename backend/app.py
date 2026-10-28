@@ -1067,7 +1067,7 @@ async def lifespan(app: FastAPI):
     mqtt.stop()
 
 
-app = FastAPI(title="Clean Assistant", version="0.31.5", lifespan=lifespan)
+app = FastAPI(title="Clean Assistant", version="0.31.6", lifespan=lifespan)
 
 
 @app.get("/api/state")
@@ -1246,7 +1246,12 @@ async def post_command(payload: dict):
 
 @app.get("/api/history")
 def get_history():
-    return {"history": history.list()}
+    from conga_core.state import _warn_message
+    # avisos guardados antes de que su código estuviera en el diccionario (p. ej. 560 antes de
+    # v0.31.0) se quedaron sin texto: se rellena al servirlos
+    return {"history": [dict(h, message=_warn_message(h.get("code")))
+                        if h.get("kind") == "fault" and not h.get("message") else h
+                        for h in history.list()]}
 
 
 @app.post("/api/history/clear")

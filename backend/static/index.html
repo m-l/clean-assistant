@@ -1658,7 +1658,7 @@
     (MAP.rooms||[]).forEach(function(r){
       if(r.named===false)return;                      // no etiquetar segmentos temporales
       var vp=s2v(r.center[0],r.center[1]);
-      labels.push({x:vp[0]*scale, y:vp[1]*scale, text:r.name, weight:700,
+      labels.push({x:vp[0]*scale, y:vp[1]*scale, text:r.name, weight:700, prio:r.area||(r.bbox?r.bbox[2]*r.bbox[3]:0),
                    fill:selected.has(r.id)?cssVar('--accent-ink'):cssVar('--ink'),
                    size:Math.max(12,Math.round(scale*5.2)), halo:Math.max(3,scale*1.6)});
     });
@@ -1687,8 +1687,26 @@
       el.setAttribute('x',l.x); el.setAttribute('y',l.y);
       el.setAttribute('font-size',l.size); el.setAttribute('font-weight',l.weight);
       el.setAttribute('fill',l.fill); el.setAttribute('stroke',halo); el.setAttribute('stroke-width',l.halo);
-      el.textContent=l.text; svg.appendChild(el);
+      el.textContent=l.text; svg.appendChild(el); l.el=el;
     });
+    // que no se pisen: se colocan primero las habitaciones grandes (prio) y cada etiqueta que choque
+    // con una ya colocada se desplaza al hueco libre más cercano (arriba/abajo, luego a los lados)
+    var placed=[];
+    function box(l,dx,dy){ var b=l.b, p=l.halo/2+1;
+      return {x0:b.x+dx-p, y0:b.y+dy-p, x1:b.x+b.width+dx+p, y1:b.y+b.height+dy+p}; }
+    function hits(a){ return placed.some(function(c){
+      return a.x0<c.x1 && c.x0<a.x1 && a.y0<c.y1 && c.y0<a.y1; }); }
+    labels.forEach(function(l){ try{ l.b=l.el.getBBox(); }catch(e){ l.b=null; } });
+    labels.filter(function(l){ return l.b && l.b.width; })
+      .sort(function(a,b){ return (b.prio||0)-(a.prio||0); })
+      .forEach(function(l){
+        var h=l.b.height*0.9, w=l.b.width*0.55, cand=[[0,0]];
+        for(var k=1;k<=3;k++) cand.push([0,-k*h],[0,k*h]);
+        cand.push([-w,0],[w,0]);                       // a los lados, como mucho media etiqueta
+        var best=cand.find(function(c){ return !hits(box(l,c[0],c[1])); })||[0,0];
+        if(best[0]||best[1]){ l.el.setAttribute('x',l.x+best[0]); l.el.setAttribute('y',l.y+best[1]); }
+        placed.push(box(l,best[0],best[1]));
+      });
   }
   // ---- robot en vivo: capa superpuesta con posición animada ----
   var SCALE=1, RBT=null, RBT_T=null, rbtRAF=0;
@@ -2331,10 +2349,15 @@
   fetch(BASE+'api/schedules').then(function(r){return r.json();}).then(function(d){SCHEDULES=d.schedules||[];renderSchedules();loadSuggested();});
   fetch(BASE+'api/robot/orders').then(function(r){return r.json();}).then(function(d){ROBOT_ORDERS=d.orders||[];renderRobotOrders();});
   // ---- registro de actividad (historial de limpiezas) ----
-  var HISTORY=[], HIST_PAGE=0, HIST_PER_PAGE=10;
+  var HISTORY=[], HIST_PAGE=0, HIST_PER_PAGE=10, HIST_PAGING=false;
   function renderHistory(){
     renderMapStats();
-    var el=document.getElementById('histList'); if(!el)return; el.innerHTML='';
+    var el=document.getElementById('histList'); if(!el)return;
+    // al cambiar de página, la lista no encoge (una página con avisos es más corta): si encogiera,
+    // el navegador recortaría el scroll y el contenido daría un salto
+    el.style.minHeight=HIST_PAGING&&el.offsetHeight ? Math.max(parseFloat(el.style.minHeight)||0, el.offsetHeight)+'px' : '';
+    HIST_PAGING=false;
+    el.innerHTML='';
     var pg=document.getElementById('histPager');
     // estadísticas totales (como TotalStatistics de Valetudo), sumando el propio historial
     var tot=document.getElementById('histTotal'), cl=HISTORY.filter(function(h){return h.kind!=='fault';});
@@ -2372,7 +2395,7 @@
     });
   }
   fetch(BASE+'api/history').then(function(r){return r.json();}).then(function(d){HISTORY=d.history||[];renderHistory();});
-  function histGo(dp){ HIST_PAGE+=dp; renderHistory(); }
+  function histGo(dp){ HIST_PAGE+=dp; HIST_PAGING=true; renderHistory(); }
   document.getElementById('histPrev').addEventListener('click',function(){histGo(-1);});
   document.getElementById('histNext').addEventListener('click',function(){histGo(1);});
   document.getElementById('histClear').addEventListener('click',async function(){

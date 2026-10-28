@@ -735,6 +735,12 @@
   "Prohibida":{en:"No-go",pt:"Proibida",fr:"Interdite",pl:"Zakazana",de:"Sperrzone",it:"Vietata",nl:"Verboden",ca:"Prohibida"},
   "Sin fregona":{en:"No-mop",pt:"Sem mopa",fr:"Sans serpillière",pl:"Bez mopa",de:"Ohne Wischen",it:"Senza lavaggio",nl:"Zonder dweilen",ca:"Sense fregona"},
   "Limpieza x2":{en:"Clean x2",pt:"Limpeza x2",fr:"Nettoyage x2",pl:"Sprzątanie x2",de:"Reinigung x2",it:"Pulizia x2",nl:"Schoonmaak x2",ca:"Neteja x2"},
+  // — nombres de los planes de horario SUGERIDOS (ver suggested_plans() en backend/schedules.py):
+  // son contenido generado por Clean Assistant, no datos del usuario, así que se traducen igual
+  // que las etiquetas de zona de arriba (ver renderSuggested()/addSuggested() en este archivo) —
+  "Solo dormitorios":{en:"Bedrooms only",pt:"Só quartos",fr:"Chambres uniquement",pl:"Tylko sypialnie",de:"Nur Schlafzimmer",it:"Solo camere da letto",nl:"Alleen slaapkamers",ca:"Només dormitoris"},
+  "Solo baños":{en:"Bathrooms only",pt:"Só casas de banho",fr:"Salles de bain uniquement",pl:"Tylko łazienki",de:"Nur Badezimmer",it:"Solo bagni",nl:"Alleen badkamers",ca:"Només banys"},
+  "Limpieza profunda":{en:"Deep clean",pt:"Limpeza profunda",fr:"Nettoyage en profondeur",pl:"Dokładne sprzątanie",de:"Tiefenreinigung",it:"Pulizia profonda",nl:"Grondige schoonmaak",ca:"Neteja profunda"},
   "Editar en el mapa (mover / tamaño / rotar)":{en:"Edit on the map (move / resize / rotate)",pt:"Editar no mapa (mover / tamanho / rodar)",fr:"Modifier sur le plan (déplacer / taille / pivoter)",pl:"Edytuj na mapie (przesuń / rozmiar / obróć)",de:"Auf der Karte bearbeiten (verschieben / Größe / drehen)",it:"Modifica sulla mappa (sposta / dimensione / ruota)",nl:"Op de kaart bewerken (verplaatsen / grootte / draaien)",ca:"Editar al mapa (moure / mida / girar)"},
   "Editar":{en:"Edit",pt:"Editar",fr:"Modifier",pl:"Edytuj",de:"Bearbeiten",it:"Modifica",nl:"Bewerken",ca:"Editar"},
   "Renombrar zona":{en:"Rename zone",pt:"Renomear zona",fr:"Renommer la zone",pl:"Zmień nazwę strefy",de:"Zone umbenennen",it:"Rinomina zona",nl:"Zone hernoemen",ca:"Reanomenar zona"},
@@ -2173,13 +2179,16 @@
       card.innerHTML='<div class="top"><span class="nm"></span><span class="tm">'+(p.time||'')+'</span>'+
         '<button class="btn sAdd" style="margin-left:auto;padding:6px 14px;font-size:12px">'+t('+ Añadir')+'</button></div>'+
         '<div class="days">'+days+'</div><div class="perroom"><span class="pr">'+names+'</span></div>';
-      card.querySelector('.nm').textContent=p.name;
+      card.querySelector('.nm').textContent=t(p.name);   // nombre generado (no del usuario): se traduce
       card.querySelector('.sAdd').addEventListener('click',function(){ addSuggested(p); });
       el.appendChild(card);
     });
   }
   function addSuggested(p){
-    var plan={name:p.name,time:p.time,days:p.days,rooms:p.rooms,enable:true};   // sin id -> slug por nombre
+    // se guarda el nombre YA TRADUCIDO (igual que al crear una zona, ver api/zones/add más abajo)
+    // y el id de la sugerencia que lo originó, para que /api/schedules/suggested no lo vuelva a
+    // proponer sin depender de comparar nombres en varios idiomas
+    var plan={name:t(p.name),time:p.time,days:p.days,rooms:p.rooms,enable:true,from_suggested:p.id};
     fetch(BASE+'api/schedules/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:plan})})
       .then(function(r){return r.json();}).then(function(res){ SCHEDULES=res.schedules||[]; renderSchedules(); loadSuggested(); });
   }

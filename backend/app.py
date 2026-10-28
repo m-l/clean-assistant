@@ -1095,7 +1095,7 @@ async def lifespan(app: FastAPI):
 # Supervisor) y hay que subirlo a mano junto a esa -- llevaba desde 0.30.0 sin tocarse pese a
 # muchos bumps de config.yaml, lo que hacía que el pie de la web (appVer) pareciera confirmar una
 # versión vieja incluso cuando el add-on sí tenía código nuevo. Mantenerlos sincronizados.
-app = FastAPI(title="Clean Assistant", version="0.30.11", lifespan=lifespan)
+app = FastAPI(title="Clean Assistant", version="0.30.12", lifespan=lifespan)
 
 
 @app.get("/api/state")
@@ -1734,10 +1734,19 @@ def get_schedules():
 @app.get("/api/schedules/suggested")
 def get_suggested_schedules():
     """Planes sugeridos según el mapa (dormitorios / baños / limpieza profunda).
-    Se omiten los que ya existen (por nombre)."""
+    Se omiten los que ya se añadieron. El nombre que ve/guarda el usuario ya viene TRADUCIDO
+    (index.html: renderSuggested()/addSuggested() -- son nombres generados, no datos del
+    usuario, así que se tratan como las etiquetas de zona). Comparar solo por nombre ya no
+    basta (un plan guardado en inglés no coincidiría con el "Limpieza profunda" en español que
+    genera suggested_plans()), así que cada plan añadido desde una sugerencia guarda también
+    el id de la sugerencia que lo originó (`from_suggested`); se mantiene además la comparación
+    por nombre como red de seguridad para planes guardados antes de este cambio."""
     rooms = (getattr(robot, "map", None) or {}).get("rooms", [])
-    existing = {(p.get("name") or "").lower() for p in schedules.for_map(_active_map())}
-    sug = [s for s in suggested_plans(rooms) if s["name"].lower() not in existing]
+    existing_plans = schedules.for_map(_active_map())
+    added_ids = {p.get("from_suggested") for p in existing_plans if p.get("from_suggested")}
+    existing_names = {(p.get("name") or "").lower() for p in existing_plans}
+    sug = [s for s in suggested_plans(rooms)
+           if s["id"] not in added_ids and s["name"].lower() not in existing_names]
     return {"suggested": sug}
 
 

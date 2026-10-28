@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.31.4
+Gracias a @m-l (#21, PRs #18 y #19):
+- **Potencia «Máx» arreglada en la gen. nueva (8090, 6090, 7090, 9090…).** Ese botón enviaba en
+  realidad `0`, que en estos robots es **apagar la succión**. Ahora el botón es «Off» de verdad; en la
+  gen. legacy (3xxx/4xxx), donde `0` sí es el máximo, sigue diciendo «Máx».
+- **Idioma de las entidades de Home Assistant** (Ajustes → Zona de peligro): nombres, opciones de los
+  selectores y avisos del robot en los 9 idiomas. Por defecto, español (sin cambios). Al cambiarlo, las
+  entidades se recrean con el nombre nuevo; puede afectar a tarjetas y automatizaciones que usen el
+  nombre o el texto exacto de una opción.
+- Los nombres por defecto de las zonas nuevas salen en el idioma de la interfaz.
+- Cambiar el idioma de la interfaz ya no borra la selección de habitaciones y modo de la pestaña
+  Limpieza.
+
 ## 0.31.3
 - **Textos del mapa nítidos.** Los nombres de habitaciones y zonas se pintaban dentro de la imagen del
   mapa, que se escala en modo pixelado (y con el zoom), y se veían pixelados. Ahora van en una capa

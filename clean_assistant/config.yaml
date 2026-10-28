@@ -15,6 +15,11 @@ init: false
 # DNS, no la IP interna de Docker) y la zona horaria de Home Assistant (para que los
 # horarios no se disparen con desfase).
 hassio_api: true
+# Acceso a la API de Home Assistant Core (a través del proxy del Supervisor): para crear/
+# descartar una persistent_notification en cuanto la propia conexión MQTT de la app se cae o
+# se restablece (ver MqttBridge.ha_notify_provider / app.py:_on_mqtt_connectivity_change),
+# sin depender de un automatismo externo que observe la entidad de disponibilidad.
+homeassistant_api: true
 # La interfaz web se abre desde la barra lateral de Home Assistant (ingress).
 ingress: true
 ingress_port: 8099

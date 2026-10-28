@@ -2642,7 +2642,8 @@
     // El botón de succión "Off" (seg[data-cmd=fan]) es un apagado real SOLO en el backend nuevo.
     // En el legacy, conga_core/legacy/robot.py remapea ese mismo valor a "máximo" de verdad
     // (ver FAN_LABELS_LEGACY en mqtt_bridge.py) -- ahí el botón vuelve a decir "Máx", traducido.
-    if(info.backend==='legacy'){ var fb=document.getElementById('fanOffBtn'); if(fb) fb.textContent=t('Máx'); }
+    if(info.backend==='legacy'){ var fb=document.getElementById('fanOffBtn'); if(fb){ fb.textContent=t('Máx');
+      fb.parentNode.appendChild(fb); } }   // relabelled "Máx" reads better at the end, not first (review #18)
     var ml=document.getElementById('mapLiveTog'); if(ml) ml.setAttribute('aria-pressed',!!info.map_image_live);
     var el=document.getElementById('entityLangSel'); if(el&&info.lang){ el.value=info.lang; el.setAttribute('data-prev',info.lang); }
   }).catch(function(){});

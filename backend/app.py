@@ -231,8 +231,9 @@ PREFS_PATH = _data("prefs.json")
 
 # preferencias propias de Clean Assistant (no del robot): se aplican al puente MQTT al crearlo
 # "lang": idioma de las entidades/opciones que el puente MQTT publica en HA (backend/i18n.py).
-# Coincide con el selector de idioma de la propia interfaz web -- el front llama a
-# /api/prefs/lang cuando el usuario lo cambia ahí, así que ambos quedan sincronizados.
+# Es el selector de "idioma de entidades" de la Zona de peligro (entityLangSel), NO el selector
+# de idioma de la propia interfaz web (langSel, puramente client-side) -- el front llama a
+# /api/prefs/lang cuando el usuario lo cambia ahí.
 _ui_prefs = {"map_image_live": False, "lang": "es"}
 
 # sombra de "próxima limpieza" (mqtt.prefs: fan/water/mop/mode/twice/turbo_carpet -- ver
@@ -1094,7 +1095,7 @@ async def lifespan(app: FastAPI):
 # Supervisor) y hay que subirlo a mano junto a esa -- llevaba desde 0.30.0 sin tocarse pese a
 # muchos bumps de config.yaml, lo que hacía que el pie de la web (appVer) pareciera confirmar una
 # versión vieja incluso cuando el add-on sí tenía código nuevo. Mantenerlos sincronizados.
-app = FastAPI(title="Clean Assistant", version="0.30.10", lifespan=lifespan)
+app = FastAPI(title="Clean Assistant", version="0.30.11", lifespan=lifespan)
 
 
 @app.get("/api/state")
@@ -1346,10 +1347,10 @@ async def set_map_image_live(payload: dict):
 @app.post("/api/prefs/lang")
 async def set_lang(payload: dict):
     """Idioma de los nombres de entidad y opciones que el puente MQTT publica en Home
-    Assistant (backend/i18n.py). El selector de idioma de la propia interfaz web llama a
-    este endpoint al cambiarlo, para que las entidades de HA sigan el mismo idioma (pedido
-    por m-l). Si MQTT está activo, se vuelve a publicar el descubrimiento al momento, sin
-    esperar a la próxima reconexión."""
+    Assistant (backend/i18n.py). Lo llama el selector de "idioma de entidades" de la Zona de
+    peligro (entityLangSel) -- un ajuste aparte del selector de idioma de la propia interfaz
+    web (langSel), que es puramente client-side y no pasa por aquí. Si MQTT está activo, se
+    vuelve a publicar el descubrimiento al momento, sin esperar a la próxima reconexión."""
     lang = payload.get("value")
     if lang not in VALID_LANGS:
         return {"ok": False, "error": "idioma no soportado", "lang": _ui_prefs["lang"]}

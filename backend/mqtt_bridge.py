@@ -522,7 +522,14 @@ class MqttBridge:
         node, v = self.node, p.get("value")
         if action in ("fan", "water", "mop", "mode", "base_type"):
             self.prefs[action] = v
-            self._pub(f"conga/{node}/pref/{action}", v)
+            # publicar la opción TRADUCIDA, no la clave canónica -- las options del select ya
+            # están traducidas (_localized_options en publish_discovery), así que mandar la
+            # clave cruda hace que HA la rechace por no ser una de sus opciones válidas (en
+            # inglés, p. ej.) o, en el backend legacy, incluso en español ("Off" cuando la
+            # opción publicada es "Máx"). Mismo patrón que _pub_dust_freq(). (review PR #18)
+            labels = {"fan": self._fan_labels, "water": WATER_LABELS, "mop": MOP_LABELS,
+                      "mode": CLEAN_MODE_LABELS, "base_type": BASE_TYPE_LABELS}[action]
+            self._pub(f"conga/{node}/pref/{action}", t(self._lang(), labels.get(v, v)))
         elif action == "twice":
             self.prefs["twice"] = bool(v)
             self._pub(f"conga/{node}/twice", "on" if v else "off")

@@ -527,9 +527,12 @@ class MqttBridge:
         self.publish_discovery()
 
     def note_web_command(self, action, p):
-        """Sincroniza la sombra de preferencias en HA cuando el cambio viene de la web."""
-        if not self.client:
-            return
+        """Sincroniza la sombra de preferencias en HA cuando el cambio viene de la web. Sigue
+        actualizando self.prefs y persistiendo aunque no haya MQTT configurado (MQTT_HOST vacío)
+        -- antes el "if not self.client: return" de aquí arriba cortaba esto en seco, así que sin
+        MQTT un cambio desde la web ni se guardaba ni sobrevivía al siguiente broadcast de estado
+        (review PR #22, @miguelsg29). _pub() ya es un no-op sin client, así que no hace falta
+        guardia extra para las publicaciones de abajo."""
         node, v = self.node, p.get("value")
         if action in ("fan", "water", "mop", "mode", "base_type"):
             self.prefs[action] = v

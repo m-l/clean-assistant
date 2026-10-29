@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.31.6
+- **Los nombres del mapa ya no se pisan.** Si dos etiquetas se solapan (p. ej. una habitación pequeña
+  junto a otra), la de la habitación más pequeña se desplaza al hueco libre más cercano.
+- **Actividad:** cambiar de página ya no desplaza el contenido cuando una página es más corta que otra.
+- Los avisos antiguos del historial que se guardaron sin texto (p. ej. «Aviso (código 560)») muestran
+  ahora su descripción.
+
+## 0.31.5
+Gracias a @m-l (PRs #20 y #23):
+- **Aviso en Home Assistant si Clean Assistant pierde su conexión MQTT.** Crea una notificación en HA en
+  cuanto se cae la conexión con el broker y la quita al restablecerse (no avisa al arrancar ni al parar
+  el add-on). El add-on pide ahora acceso a la API de Home Assistant (`homeassistant_api`).
+- Los nombres de los planes sugeridos (Solo dormitorios, Solo baños, Limpieza profunda) salen en el
+  idioma de la interfaz, y un plan ya añadido no se vuelve a sugerir aunque se cambie de idioma.
+
 ## 0.31.4
 Gracias a @m-l (#21, PRs #18 y #19):
 - **Potencia «Máx» arreglada en la gen. nueva (8090, 6090, 7090, 9090…).** Ese botón enviaba en

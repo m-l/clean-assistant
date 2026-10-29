@@ -528,6 +528,27 @@ STR: dict[str, dict[str, str]] = {
         "fr": "15 h de nettoyage sans vidage : videz le bac à poussière", "pl": "15 h sprzątania bez opróżniania: opróżnij pojemnik na kurz",
         "de": "15 Std. Reinigung ohne Leeren: Staubbehälter leeren", "it": "15 h di pulizia senza svuotare: svuota il contenitore della polvere",
         "nl": "15 u schoonmaken zonder legen: leeg het stofreservoir", "ca": "15 h netejant sense buidar: buida el dipòsit de pols"},
+
+    # — aviso de conexión MQTT perdida (persistent_notification en HA; ver
+    # MqttBridge.ha_notify_provider / app.py) —
+    "Clean Assistant: conexión MQTT perdida": {
+        "en": "Clean Assistant: MQTT connection lost",
+        "pt": "Clean Assistant: ligação MQTT perdida",
+        "fr": "Clean Assistant : connexion MQTT perdue",
+        "pl": "Clean Assistant: utracono połączenie MQTT",
+        "de": "Clean Assistant: MQTT-Verbindung verloren",
+        "it": "Clean Assistant: connessione MQTT persa",
+        "nl": "Clean Assistant: MQTT-verbinding verloren",
+        "ca": "Clean Assistant: connexió MQTT perduda"},
+    "Clean Assistant ha perdido la conexión con el broker MQTT. Las entidades del robot pueden quedar sin actualizar hasta que se restablezca.": {
+        "en": "Clean Assistant has lost its connection to the MQTT broker. The robot's entities may stop updating until it's restored.",
+        "pt": "O Clean Assistant perdeu a ligação ao broker MQTT. As entidades do robô podem deixar de atualizar até ser restabelecida.",
+        "fr": "Clean Assistant a perdu la connexion au broker MQTT. Les entités du robot risquent de ne plus se mettre à jour tant qu'elle n'est pas rétablie.",
+        "pl": "Clean Assistant utracił połączenie z brokerem MQTT. Encje robota mogą przestać się aktualizować do czasu przywrócenia połączenia.",
+        "de": "Clean Assistant hat die Verbindung zum MQTT-Broker verloren. Die Entitäten des Roboters werden möglicherweise nicht mehr aktualisiert, bis sie wiederhergestellt ist.",
+        "it": "Clean Assistant ha perso la connessione al broker MQTT. Le entità del robot potrebbero smettere di aggiornarsi finché non viene ripristinata.",
+        "nl": "Clean Assistant heeft de verbinding met de MQTT-broker verloren. De entiteiten van de robot worden mogelijk niet meer bijgewerkt totdat deze is hersteld.",
+        "ca": "Clean Assistant ha perdut la connexió amb el broker MQTT. Les entitats del robot poden deixar d'actualitzar-se fins que es restableixi."},
 }
 
 

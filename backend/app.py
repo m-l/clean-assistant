@@ -1095,7 +1095,7 @@ async def lifespan(app: FastAPI):
 # Supervisor) y hay que subirlo a mano junto a esa -- llevaba desde 0.30.0 sin tocarse pese a
 # muchos bumps de config.yaml, lo que hacía que el pie de la web (appVer) pareciera confirmar una
 # versión vieja incluso cuando el add-on sí tenía código nuevo. Mantenerlos sincronizados.
-app = FastAPI(title="Clean Assistant", version="0.30.13", lifespan=lifespan)
+app = FastAPI(title="Clean Assistant", version="0.30.14", lifespan=lifespan)
 
 
 @app.get("/api/state")
@@ -1274,7 +1274,12 @@ async def post_command(payload: dict):
 
 @app.get("/api/history")
 def get_history():
-    return {"history": history.list()}
+    from conga_core.state import _warn_message
+    # avisos guardados antes de que su código estuviera en el diccionario (p. ej. 560 antes de
+    # v0.31.0) se quedaron sin texto: se rellena al servirlos
+    return {"history": [dict(h, message=_warn_message(h.get("code")))
+                        if h.get("kind") == "fault" and not h.get("message") else h
+                        for h in history.list()]}
 
 
 @app.post("/api/history/clear")

@@ -1095,7 +1095,7 @@ async def lifespan(app: FastAPI):
 # Supervisor) y hay que subirlo a mano junto a esa -- llevaba desde 0.30.0 sin tocarse pese a
 # muchos bumps de config.yaml, lo que hacía que el pie de la web (appVer) pareciera confirmar una
 # versión vieja incluso cuando el add-on sí tenía código nuevo. Mantenerlos sincronizados.
-app = FastAPI(title="Clean Assistant", version="0.30.14", lifespan=lifespan)
+app = FastAPI(title="Clean Assistant", version="0.30.15", lifespan=lifespan)
 
 
 @app.get("/api/state")

@@ -902,7 +902,7 @@ class MqttBridge:
                     self._cmd(cmd.base_type(canon))
                 # se guarda para la próxima limpieza Y para que sobreviva a un reinicio del
                 # add-on (antes solo "base_type" persistía; fan/water/mop/mode volvían siempre
-                # a su valor por defecto al reiniciar, issue reportada por @m-l)
+                # a su valor por defecto al reiniciar)
                 if key in ("fan", "water", "mop", "mode", "base_type") and self._persist:
                     self._persist()
                 self._pub(f"conga/{node}/pref/{key}", payload)

@@ -326,7 +326,9 @@ ROOMS_AS_ORDER = ("CECOTECCRL20S-1001",)
 
 def immediate_order(room_ids, map_head_id, rooms_meta=None, project_type=None, now=None):
     """Limpieza de habitaciones YA como horario de un solo uso (ver ROOMS_AS_ORDER)."""
-    now = now or datetime.datetime.now()
+    # para el minuto SIGUIENTE: el robot dispara el horario al empezar el minuto, y uno puesto para
+    # el minuto en curso ya no salta (3890 de @Here87, #14: enviado a las 12:33:01 para las 12:33)
+    now = (now or datetime.datetime.now()) + datetime.timedelta(minutes=1)
     days = ["lun", "mar", "mie", "jue", "vie", "sab", "dom"]
     plan = {"orderid": int(_time.time()), "name": "Clean Assistant",
             "time": f"{now.hour}:{now.minute:02d}", "days": [days[now.weekday()]],

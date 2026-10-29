@@ -363,6 +363,20 @@ class LegacyRobot:
                         "DEVICE_MAPID_GET_GLOBAL_INFO_RSP")
         self._auto_clean(CTRL_START)
 
+    def _clean_all(self):
+        """Limpieza completa. El automático (0x106D) limpia el plan de habitaciones seleccionado, y
+        tras limpiar habitaciones ese plan solo tiene esas activadas: el robot repetía la última
+        (captura de @mactron254, #12). Se reactivan todas antes de arrancar."""
+        L, head = self._lmap, self._lmap.get("head")
+        if head and L.get("rooms"):
+            mid = head["map_head_id"]
+            self._send_recv("DEVICE_MAPID_SET_PLAN_PARAMS_REQ",
+                            self._plan_rooms_req(mid, lambda rid: True),
+                            "DEVICE_MAPID_SET_PLAN_PARAMS_RSP")
+            self._send_recv("DEVICE_MAPID_SELECT_MAP_PLAN_REQ", {1: mid, 2: ROOM_PLAN_ID, 3: 1},
+                            "DEVICE_MAPID_SELECT_MAP_PLAN_RSP")
+        self._auto_clean(CTRL_START)
+
     def _plan_rooms_req(self, mid: int, enable, names: dict | None = None) -> dict:
         """DEVICE_MAPID_SET_PLAN_PARAMS_REQ del plan de habitaciones (mismo mensaje que manda
         Congatudo, validado byte a byte). enable(room_id) -> bool; names: {id: nombre nuevo}."""
@@ -616,6 +630,8 @@ class LegacyRobot:
         else:
             op = None
         if op is None:
+            if ctrl == CTRL_START and starting and self.state.state not in ("paused", "cleaning"):
+                return self._in_background(self._clean_all)
             return self._auto_clean(ctrl)
         return self._send(op, {1: ctrl})
 

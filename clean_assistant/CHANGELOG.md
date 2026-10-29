@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.31.7
+- **Se recuerdan Modo, Succión, Agua y Mopa** (y doble pasada / turbo en alfombras) tras reiniciar el
+  add-on, y la web muestra los que están activos. Nueva opción `DEFAULT_MODE`. Gracias a @m-l (PR #22).
+- **Gen. legacy (3xxx/4xxx): la limpieza completa ya no repite la última habitación.** Tras limpiar
+  habitaciones, el robot se quedaba con un plan de solo esas; ahora se reactivan todas antes de
+  arrancar (#12, gracias a @mactron254).
+- **3890: limpiar habitaciones** programa el horario de un solo uso para el minuto siguiente; puesto
+  para el minuto en curso, el robot no llegaba a ejecutarlo (#14).
+
 ## 0.31.6
 - **Los nombres del mapa ya no se pisan.** Si dos etiquetas se solapan (p. ej. una habitación pequeña
   junto a otra), la de la habitación más pequeña se desplaza al hueco libre más cercano.

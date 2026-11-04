@@ -4,17 +4,21 @@
 
 A **local, no-cloud** app to manage the **Cecotec Conga 8090 Ultra** — and other Conga
 models on the same **3irobotix** platform (**4690 / 6090 / 7090 / 9090 / 3890** confirmed by
-users): live map, per-room cleaning, zones, schedules, history and every
+users), Tuya-based Congas such as the **8290** (experimental), and now other brands too: the
+**Rowenta X-plorer Serie 80** (experimental). Live map,
+per-room cleaning, zones, schedules, history and every
 setting, in its own polished web interface, **available in 9 languages** (Spanish, English,
 German, Italian, French, Portuguese, Dutch, Catalan, Polish).
 In the spirit of Valetudo/Congatudo, but for the 8000 generation (which uses TLS +
 WebSocket + JSON + Protobuf, not supported by those projects).
 
 > **Model compatibility:** these Congas use the **3irobotix** platform. Some newer models
-> (e.g. the **8290 / Immortal** line) are **Tuya-based**, not 3irobotix, and are **not**
-> supported here — for those, use [LocalTuya](https://github.com/xZetsubou/hass-localtuya).
+> (e.g. the **8290 / Immortal** line) are **Tuya-based**: they're supported by a new
+> **experimental `tuya` backend** (no map yet) — see [Tuya-based Congas](#tuya-based-congas-8290--tuya-backend-experimental).
 > Older Congas (**3090 / 3490 / 4090**) use a different 3irobotix protocol: they're supported
 > by an **experimental `legacy` backend** — see [Older Congas](#older-congas-3090--3490--4090--legacy-backend-experimental).
+> **Rowenta X-plorer Serie 80** (RobArt RobEye platform): **experimental `robeye` backend** — see
+> [Rowenta X-plorer Serie 80](#rowenta-x-plorer-serie-80--robeye-backend-experimental).
 
 > Built on the reverse engineering from the documentation repo:
 > [conga_8090_mqtt_bridge](https://github.com/miguelsg29/conga_8090_mqtt_bridge).
@@ -384,13 +388,78 @@ fire.
 generation, and the history can't list which rooms were cleaned (the robot doesn't report
 the current room). Home Assistant shows it as **"Conga 3xxx/4xxx (legacy)"**.
 
+### Rowenta X-plorer Serie 80 — `robeye` backend (experimental)
+
+Clean Assistant isn't only for Congas anymore. Since **v0.32.0** it also controls the
+**Rowenta X-plorer Serie 80** (RobArt **RobEye** platform, the same one behind ROMY robots)
+through the robot's own **local HTTP API** on port 8080 — no cloud and no DNS to redirect.
+Tested end to end on a real X-plorer Serie 80 (firmware SER80-1.2.3).
+
+1. In the app's **Configuration**, set **`BACKEND`** to **`robeye`**.
+2. Optionally set **`ROBOT_IP`** to the robot's IP. If you leave it empty, or the IP changes
+   (DHCP), Clean Assistant finds the robot on your network by itself and recognizes it by its
+   unique ID.
+3. Restart the app. If you used Home Assistant's **ROMY** integration for this robot, you can
+   remove it: Clean Assistant replaces it (keep the same entity IDs if automations use them).
+
+**Implemented:** status, battery and warnings · live map with rooms, walls, dock, no-go
+zones and robot position · clean the whole house (with the saved map) or selected rooms ·
+pause / resume / return to dock · the robot's 4 suction levels · edge mode and deep clean
+(double pass) · room names, room type and floor type · **no-go zones** (create, move,
+delete) · **maps**: create a new one, switch and delete · **merge and split rooms** · cleaning history with m², time and
+rooms (from the robot itself) · Clean Assistant's own schedules · the schedules saved in the
+robot (shown, and importable into Clean Assistant) · maintenance counters per part ·
+lifetime statistics in Home Assistant (distance, time, area, number of cleanings) · MQTT /
+Home Assistant.
+
+**Not yet:** mopping mode (to be checked with the water tank fitted) and creating or editing
+the robot's own schedules (they're shown and can be imported).
+
+### Tuya-based Congas (8290…) — `tuya` backend (experimental)
+
+Some newer Congas (the **8290** and others with the Cecotec "ThingClips" app) run on **Tuya**
+instead of 3irobotix. Since **v0.35.0** Clean Assistant talks to them **directly on your
+network** with Tuya's local protocol (**3.3** and **3.4**, port 6668) — no cloud and no DNS to
+redirect. Built from the schema and logs shared by
+[@ftorrealbaa](https://github.com/ftorrealbaa) ([#8](https://github.com/miguelsg29/clean-assistant/issues/8))
+and tested against a simulated robot; **waiting for the first test on a real robot**.
+
+You need the robot's **device ID** and **local key** (a 16-character key Tuya uses to encrypt
+local traffic). If the robot is paired with the **Smart Life / Tuya Smart** app, the
+[tinytuya wizard](https://github.com/jasonacox/tinytuya#setup-wizard---getting-local-keys)
+gets them. With the Cecotec app, see how it was done in
+[#8](https://github.com/miguelsg29/clean-assistant/issues/8). Treat the local key like a
+password: never post it.
+
+1. In the app's **Configuration**, set **`BACKEND`** to **`tuya`**.
+2. Fill in **`TUYA_DEVICE_ID`**, **`TUYA_LOCAL_KEY`** and **`TUYA_VERSION`** (3.3 for the 8290).
+3. Optionally set **`ROBOT_IP`**. If you leave it empty, or the IP changes, Clean Assistant looks
+   for the robot on your network and recognizes it by its local key.
+4. Restart the app.
+
+**Implemented:** status, battery and warnings (the robot's 30 fault codes) · clean the whole
+house · pause / resume / return to dock · locate · manual control · suction (Off, Eco,
+Normal, Turbo) and water level · modes Auto, Deep clean, Mop only, Edges, Spiral and Square
+spiral · carpet boost · do-not-disturb · sound and volume · empty the dock · consumables
+(remaining life from the robot, with reset) · lifetime statistics · MQTT / Home Assistant.
+
+**Not yet:** the **map** (the robot only sends it to the Tuya cloud, not over the local
+network), and therefore rooms, zones and schedules.
+
 ## Support
 
 Clean Assistant is free and 100% local. If it's useful to you, you can support development
 (and buying more robots to add support for): ☕ **[ko-fi.com/miguelsg29](https://ko-fi.com/miguelsg29)** — completely optional, and thank you!
 
+### 💛 Supporters
+
+Thank you to everyone who has supported Clean Assistant:
+
+- [@miajed](https://github.com/miajed) — the project's very first supporter ☕
+
 ## License
 
 [MIT](LICENSE). Independent reverse-engineering project for interoperability and personal
-use — **not affiliated with, endorsed by, or authorized by Cecotec or 3irobotix**. "Conga"
-and "Cecotec" are trademarks of their respective owners. Use at your own risk.
+use — **not affiliated with, endorsed by, or authorized by Cecotec, 3irobotix, Rowenta /
+Groupe SEB, RobArt or Tuya**. "Conga", "Cecotec", "Rowenta" and "X-plorer" are trademarks of their
+respective owners. Use at your own risk.

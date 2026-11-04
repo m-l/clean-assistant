@@ -1,5 +1,171 @@
 # Changelog
 
+## 0.35.1
+- **Backend `tuya`: arreglado que el robot no hiciera caso.** Las tramas acababan en `0000AA99` en vez de
+  `0000AA55`; el robot las descartaba todas y cortaba la conexión a los 30 s (conectaba y se desconectaba
+  en bucle, #8). Ahora las tramas son idénticas byte a byte a las de tinytuya, también el latido en 3.4.
+- Si el robot acepta la conexión pero no contesta en 15 s, el registro lo dice y sugiere revisar la local
+  key, la versión y que no haya otra integración local (LocalTuya, tuya-local) conectada a la vez.
+
+## 0.35.0
+- **Nuevo backend `tuya` (experimental): Conga sobre Tuya (8290 y otros)**, en local con el
+  protocolo de Tuya 3.3/3.4 y la local key del robot (opciones `TUYA_DEVICE_ID`,
+  `TUYA_LOCAL_KEY`, `TUYA_VERSION`; `ROBOT_IP` opcional, si no lo busca en la red). Estado, avisos
+  (30 códigos de fallo), limpieza completa, pausa/continuar/base, localizar, control manual,
+  succión y agua, modos (Auto, Limpieza completa, Fregado, Bordes, Espiral, Espiral cuadrada),
+  turbo en alfombras, no molestar, sonido y volumen, vaciar la base, consumibles y totales, todo
+  también en Home Assistant. Aún sin mapa (el robot solo lo manda a la nube de Tuya). Hecho con los
+  datos de @ftorrealbaa (#8); falta probarlo con un robot real.
+
+## 0.34.10
+- Rowenta (backend `robeye`): al terminar la última habitación el estado pasa a **Volviendo a la base**
+  (antes seguía en «Limpiando» hasta llegar, porque el robot no cambia de modo) y la habitación actual
+  deja de saltar a las que cruza de camino.
+
+## 0.34.9
+- **Conga 3890: limpiar habitaciones pone antes el agua en Off.** El horario de un solo uso ya va sin
+  agua, pero el robot parece comprobar su nivel de agua general al arrancar y pide la mopa (aviso 522,
+  #14). Para los horarios, pon el agua en Off en los controles de Clean Assistant.
+
+## 0.34.8
+- Rowenta (backend `robeye`): el selector **Modo de limpieza** de Home Assistant solo ofrece los modos que
+  tiene este robot (Auto y Bordes).
+
+## 0.34.7
+- **Home Assistant (todos los modelos): nuevo botón «Limpiar toda la casa»**, como los de cada
+  habitación, para paneles y automatizaciones.
+- Rowenta (backend `robeye`): el editor de horarios ya no muestra agua ni mopa, y la succión ofrece sus
+  4 niveles (Silencio, Eco, Normal, Turbo).
+
+## 0.34.6
+- Rowenta (backend `robeye`): **activar o desactivar** desde Clean Assistant los horarios guardados en el
+  robot (los de la app de Rowenta), además de borrarlos o importarlos.
+
+## 0.34.5
+- **Rowenta (backend `robeye`):**
+  - **mando manual**: el joystick de Clean Assistant mueve el robot (modo directo de su API local:
+    pasos cortos adelante/atrás y giros). Al soltarlo, o al mandar otra orden, el robot vuelve al modo normal;
+  - **borrar del robot** los horarios creados con la app de Rowenta (junto a «Importar a Clean Assistant»);
+  - el **tipo de suelo** y de habitación se ven cambiados al momento (antes volvía un instante al valor
+    anterior y parecía que no se dejaba cambiar);
+  - la **orientación del robot** en el mapa sale bien (el robot la da en radianes ×2048);
+  - sin botón **«Localizar»**, que este robot no tiene (tampoco en Home Assistant).
+
+## 0.34.4
+- Rowenta (backend `robeye`): ya no aparece un falso «Error interno del robot» un par de segundos al
+  quitar el depósito, levantar el robot o dejarlo en el suelo. El robot emite un instante unos
+  indicadores internos en cada cambio; ahora solo cuentan si duran.
+
+## 0.34.3
+- **Consumibles en Home Assistant (todos los modelos):** los sensores de cepillo central, cepillo lateral,
+  filtro y mopa ahora dan el **% de vida restante**, como la interfaz web. Antes enviaban las horas de uso
+  aunque el sensor dijera «%» (una pieza nueva salía al 0 %). Si tienes una automatización con estos
+  sensores, revisa el umbral.
+
+## 0.34.2
+- Rowenta (backend `robeye`): al dividir una habitación, el mapa se actualiza al momento (antes tardaba
+  hasta un minuto).
+
+## 0.34.1
+- Rowenta (backend `robeye`): las zonas prohibidas creadas en Clean Assistant ya quedan como
+  prohibidas en el robot (el robot tarda un momento en crear el área y Clean Assistant no la esperaba).
+
+## 0.34.0
+- **Rowenta X-plorer Serie 80 (backend `robeye`), ya casi como un Conga:**
+  - **zonas prohibidas:** crearlas, moverlas y borrarlas desde Clean Assistant (se guardan en el robot);
+  - **unir y dividir habitaciones**;
+  - **mapa nuevo:** el robot lo guarda solo al terminar de explorar; ahora Clean Assistant lo detecta y
+    pasa a mostrarlo;
+  - habitaciones de mapas nuevos: el robot las numera por encima de 50 y Clean Assistant las traduce
+    (antes no se habrían dibujado).
+
+## 0.33.1
+- Rowenta (backend `robeye`): si el robot se atasca (rueda, cepillo…) se muestra como **error**, no
+  como «Parado». El robot lo manda como notificación, pero interrumpe la limpieza.
+
+## 0.33.0
+- **Rowenta X-plorer Serie 80 (backend `robeye`):**
+  - **mapas:** crear un mapa nuevo (el robot explora y, al volver a la base, se guarda), cambiar de
+    mapa y borrar mapas, como con los Conga. Crear un mapa nunca borra los que ya tiene el robot;
+  - **tipo de suelo y de habitación** guardados en el propio robot (antes el suelo volvía a «Suave»).
+    El robot distingue azulejo, alfombra y «sin definir»; Suave y Madera se guardan en Clean Assistant;
+  - **succión con los 4 niveles del robot**: Silencio, Eco, Normal y Turbo (antes «Máx» y «Turbo» eran
+    el mismo);
+  - la habitación en curso ya no salta a la última planificada al empezar una limpieza completa.
+- README: el Rowenta X-plorer Serie 80 en los robots compatibles.
+
+## 0.32.6
+- Rowenta (backend `robeye`): al continuar tras una pausa ya no parpadea «Parado» un par de segundos.
+- El log de los horarios lanzados por Clean Assistant ya no dice «gen. legacy» en robots que no lo son.
+
+## 0.32.5
+- **Rowenta (backend `robeye`): «Limpieza completa de la casa» usa el mapa guardado.** Antes mandaba
+  la orden de limpiar sin mapa: el robot creaba un mapa temporal y al terminar no encontraba la base.
+  Ahora limpia todas las habitaciones del mapa guardado, como la app de Rowenta.
+- El mapa y la posición del robot se leen del mapa guardado aunque, al empezar a limpiar, el robot
+  trabaje unos segundos en uno temporal mientras se sitúa.
+
+## 0.32.4
+- **Rowenta (backend `robeye`): la pausa desde Home Assistant ya no se pierde.** Justo después de
+  parar, el robot sigue diciendo «limpiando» unos segundos y Clean Assistant olvidaba la pausa; así
+  el «iniciar» de HA lanzaba una limpieza completa en vez de continuar.
+
+## 0.32.3
+- **Arreglo general: entidades «no disponibles» en Home Assistant tras reiniciar o actualizar el
+  add-on.** Si el robot respondía antes de que Clean Assistant se conectara a MQTT, la disponibilidad
+  «online» se perdía y se quedaba el «offline» de la instancia anterior. Ahora se republica al conectar.
+- **Rowenta (backend `robeye`):**
+  - mantenimiento: Clean Assistant cuenta las horas de limpieza de cada pieza (cepillo central,
+    cepillo lateral, filtro, mopa) desde que la cambias, con su botón ↺ (también en Home Assistant);
+  - totales del robot en Home Assistant: distancia, tiempo y área totales y número de limpiezas;
+  - los horarios guardados en el robot se pueden importar a Clean Assistant (se importan
+    desactivados, para no limpiar dos veces);
+  - la habitación en curso ya no cuenta las que el robot solo atraviesa;
+  - el mapa ya no se republica en Home Assistant cada minuto si no ha cambiado;
+  - avisos nuevos traducidos a todos los idiomas.
+
+## 0.32.2
+- **Rowenta (backend `robeye`):**
+  - paredes del mapa bien marcadas (salían casi del color del suelo);
+  - historial con los m², los minutos y las habitaciones de cada limpieza (del propio robot), y la
+    habitación en curso en el mapa y en Home Assistant;
+  - se muestran los horarios guardados en el robot (los de la app de Rowenta);
+  - Ajustes sin lo que este robot no tiene: configuración de red/DNS, no molestar, sonido, turbo en
+    alfombras, actualizaciones, base de autovaciado y consumibles.
+
+## 0.32.1
+- **Rowenta (backend `robeye`), tras la primera prueba con el robot real:**
+  - el mapa ya no sale en espejo por defecto (en el Rowenta sale como la casa);
+  - la pausa se muestra como «En pausa» (el robot no tiene pausa propia y se quedaba en «Parado»);
+  - en Home Assistant: fabricante Rowenta, nombres sin «Conga» y sin las entidades que este robot
+    no tiene (agua, mopa, consumibles, autovaciado, volumen, no molestar…).
+
+## 0.32.0
+- **Nuevo backend experimental `robeye`: Rowenta X-plorer Serie 80** (y otros robots con plataforma
+  RobArt «RobEye»). Habla con la API HTTP local del robot (puerto 8080), sin nube ni DNS: mapa con
+  sus habitaciones y zonas de bloqueo, posición en vivo, limpiar todo o por habitaciones, pausa,
+  volver a la base, succión, modo bordes y doble pasada («a fondo»), avisos del robot, horarios y
+  MQTT/Home Assistant. Los nombres de las habitaciones se guardan en Clean Assistant.
+- Opciones nuevas: `BACKEND: robeye` y `ROBOT_IP` (opcional). Si el robot cambia de IP, Clean
+  Assistant lo vuelve a encontrar solo en la red y lo reconoce por su identificador.
+
+## 0.31.10
+- **Los horarios llevan la categoría y el suelo reales de cada habitación.** Antes se mandaban siempre
+  sin categoría (`room_type: 0`) y con suelo por defecto; la app oficial del 3890 manda la categoría
+  (p. ej. 2006 = Salón). Puede ser la causa del aviso 522 («falta la mopa») en el 3890 (#14). Hay que
+  volver a crear los horarios para que se manden con los datos nuevos.
+
+## 0.31.9
+- **Gen. legacy (3xxx/4xxx): succión y agua ya no están intercambiadas.** Al cambiar el agua cambiaba
+  la turbina, y la succión no hacía nada. Ahora succión 0–3 y agua 10–13, comprobado de oído por
+  @mactron254 en un 4090 (#12).
+
+## 0.31.8
+- **3890: horarios sin el aviso 522 («falta la mopa»).** Los horarios (y la limpieza de habitaciones,
+  que en este modelo va como horario de un solo uso) se mandan ahora exactamente con la forma de su app
+  oficial. Antes llevaban campos que esa app no manda, entre ellos la intensidad de la mopa, y el robot
+  esperaba la mopa aunque estuviera en «Off» (#14). Hay que volver a crear los horarios del 3890.
+
 ## 0.31.7
 - **Se recuerdan Modo, Succión, Agua y Mopa** (y doble pasada / turbo en alfombras) tras reiniciar el
   add-on, y la web muestra los que están activos. Nueva opción `DEFAULT_MODE`. Gracias a @m-l (PR #22).

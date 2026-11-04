@@ -49,6 +49,10 @@ DUST_FREQ_REV = {v: k for k, v in DUST_FREQ.items()}
 # realmente la succión. Ver MqttBridge.legacy / self._fan_labels (__init__).
 FAN_LABELS_NEW = {"Off": "Off", "Eco": "Eco", "Normal": "Normal", "Turbo": "Turbo"}
 FAN_LABELS_LEGACY = {"Off": "Máx", "Eco": "Eco", "Normal": "Normal", "Turbo": "Turbo"}
+# vida de cada consumible en horas: la MISMA que la interfaz web (index.html, CONS)
+CONSUMABLE_LIFE_H = {"main_brush": 300, "side_brush": 220, "filter": 100, "dishcloth": 160}
+# robeye (Rowenta): 4 niveles distintos; el «Off» de CA es su «Super Silent»
+FAN_LABELS_ROBEYE = {"Off": "Silencio", "Eco": "Eco", "Normal": "Normal", "Turbo": "Turbo"}
 WATER_LABELS = {"Off": "Off", "Bajo": "Bajo", "Medio": "Medio", "Alto": "Alto"}
 MOP_LABELS = {"Off": "Off", "Estándar": "Estándar", "Fuerte": "Fuerte", "Potente": "Potente"}
 CLEAN_MODE_LABELS = {"Auto": "Auto", "Limpieza completa": "Limpieza completa",
@@ -103,8 +107,13 @@ class MqttBridge:
         self._rooms = rooms_provider
         # ver el comentario sobre FAN_LABELS_NEW/FAN_LABELS_LEGACY: el significado real de
         # FAN["Off"] depende del backend (nuevo = apagado real; legacy = remapeado a "máximo").
-        self.legacy = (env("CONGA_BACKEND", "new") or "new").lower() == "legacy"
-        self._fan_labels = FAN_LABELS_LEGACY if self.legacy else FAN_LABELS_NEW
+        backend = (env("CONGA_BACKEND", "new") or "new").lower()
+        self.legacy = backend in ("legacy", "robeye")
+        self._fan_labels = (FAN_LABELS_ROBEYE if backend == "robeye" else
+                            FAN_LABELS_LEGACY if self.legacy else FAN_LABELS_NEW)
+        # modos que tiene cada robot: el Rowenta solo limpia normal o por bordes
+        modes = getattr(robot, "clean_modes", None) or (("Auto", "Bordes") if backend == "robeye" else None)
+        self._mode_labels = ({k: CLEAN_MODE_LABELS[k] for k in modes} if modes else CLEAN_MODE_LABELS)
         self.log = log
         self._persist = persist        # callback opcional para persistir prefs (frecuencia/base)
         self.host = env("MQTT_HOST")
@@ -159,6 +168,10 @@ class MqttBridge:
         """Identidad del dispositivo en HA. Usa el DID REAL del robot (capturado por
         auto-provisión o del .env), no el del entorno del add-on (que es 0). Así el
         add-on y las pruebas del PC convergen en UN solo Conga y no salen duplicados."""
+        if getattr(self.robot, "robeye", False):   # sin DID: un único robot RobEye por instalación
+            return "robeye"
+        if getattr(self.robot, "tuya", False):     # robots sobre Tuya: su id de dispositivo
+            return f"tuya_{getattr(self.robot, 'dev_id', '') or 'robot'}"
         did = getattr(getattr(self.robot, "cfg", None), "did", 0) or 0
         if did in (0, 123456):
             did = self._env_did
@@ -167,6 +180,13 @@ class MqttBridge:
     def _model_names(self):
         """(nombre, modelo) del dispositivo para HA según el project_type del robot. Para modelos
         no mapeados usa un nombre genérico 'Conga' e incluye el project_type crudo en el modelo."""
+        if getattr(self.robot, "robeye", False):   # Rowenta X-plorer y demás RobArt «RobEye»
+            cap = getattr(self.robot, "captured", {}) or {}
+            fw = cap.get("firmware") or ""
+            model = "Rowenta X-plorer Serie 80" if fw.startswith("SER80") else "RobEye"
+            return (cap.get("name") or "Robot", f"{model} ({fw.split('-release')[0]})" if fw else model)
+        if getattr(self.robot, "tuya", False):     # Conga 8290 y demás sobre Tuya
+            return ("Conga", f"Conga (Tuya {getattr(self.robot, 'version', '3.3')})")
         if getattr(self.robot, "legacy", False):   # gen. 3xxx/4xxx: no reporta project_type
             return ("Conga", "Conga 3xxx/4xxx (legacy)")
         pt = (getattr(getattr(self.robot, "cfg", None), "project_type", "") or "").strip()
@@ -238,7 +258,18 @@ class MqttBridge:
         if self.client:
             self.client.publish(topic, payload, retain=retain)
 
+    # entidades del Conga que no existen en un RobEye (Rowenta…): no se publican (y se retiran)
+    ROBEYE_SKIP = ("_low_water", "_sel_water", "_sel_mop", "_sel_base_type",
+                   "_volume", "_quiet", "_voice", "_ota", "_dust", "_turbo_carpet")
+
     def _disc(self, comp, obj, cfg):
+        skip = getattr(self.robot, "ha_skip", None) or             (self.ROBEYE_SKIP if getattr(self.robot, "robeye", False) else ())
+        if any(k in obj for k in skip):
+            self._pub(f"{self.disc}/{comp}/{obj}/config", "")
+            return
+        if getattr(self.robot, "robeye", False):
+            if isinstance(cfg.get("name"), str) and cfg["name"].startswith("Conga "):
+                cfg["name"] = cfg["name"][len("Conga "):]      # «Batería», no «Conga Batería»
         cfg.setdefault("availability_topic", self.t_avail)
         cfg.setdefault("payload_available", "online")
         cfg.setdefault("payload_not_available", "offline")
@@ -266,12 +297,14 @@ class MqttBridge:
                 self._clear_discovery(legacy)
         lang = self._lang()
         dev_name, dev_model = self._model_names()
-        device = {"identifiers": [uid], "name": dev_name, "manufacturer": "Cecotec",
+        device = {"identifiers": [uid], "name": dev_name,
+                  "manufacturer": getattr(self.robot, "manufacturer", None) or
+                                  ("Rowenta" if getattr(self.robot, "robeye", False) else "Cecotec"),
                   "model": dev_model, "sw_version": "clean-assistant"}
         self._disc("vacuum", node, {
             "name": dev_name, "unique_id": uid, "schema": "state",
-            "supported_features": ["start", "pause", "stop", "return_home",
-                                   "status", "locate"],
+            "supported_features": ["start", "pause", "stop", "return_home", "status"] +
+                                  ([] if getattr(self.robot, "robeye", False) else ["locate"]),
             "command_topic": self.t_cmd, "state_topic": self.t_state, "device": device})
 
         # sensores
@@ -289,6 +322,24 @@ class MqttBridge:
             if dclass:
                 cfg["device_class"] = dclass
             self._disc("sensor", f"{uid}_{sid}", cfg)
+        stats_keys = getattr(self.robot, "stats_keys", None) or             (("distance_km", "time_h", "area_m2", "runs") if getattr(self.robot, "robeye", False) else ())
+        if stats_keys:                                     # totales del robot (como la app)
+            for sid, name, key, unit, dclass, icon in (
+                ("tot_distance", "Distancia total recorrida", "distance_km", "km", "distance", "mdi:map-marker-distance"),
+                ("tot_time", "Tiempo total de limpieza", "time_h", "h", "duration", "mdi:timer-outline"),
+                ("tot_area", "Área total limpiada", "area_m2", "m²", None, "mdi:texture-box"),
+                ("tot_runs", "Total de limpiezas", "runs", None, None, "mdi:counter")):
+                if key not in stats_keys:
+                    continue
+                cfg = {"name": t(lang, name), "unique_id": f"{uid}_{sid}",
+                       "state_topic": f"conga/{node}/stats",
+                       "value_template": "{{ value_json.%s }}" % key, "icon": icon,
+                       "state_class": "total_increasing", "entity_category": "diagnostic"}
+                if unit:
+                    cfg["unit_of_measurement"] = unit
+                if dclass:
+                    cfg["device_class"] = dclass
+                self._disc("sensor", f"{uid}_{sid}", cfg)
         # posición del robot (x/y/ángulo en celdas del mapa) para floorplans/tarjetas externas.
         # El estado es "x,y"; x, y y angle van también como atributos (json_attributes_topic).
         self._disc("sensor", f"{uid}_pose", {
@@ -391,6 +442,11 @@ class MqttBridge:
                 "name": f"{t(lang, 'Limpiar')} {rname}", "unique_id": f"{uid}_room_{rid}",
                 "command_topic": f"conga/{node}/room_command", "payload_press": str(rid),
                 "icon": "mdi:broom"})
+        # limpiar toda la casa como botón (como los de habitación): cómodo en paneles de HA, donde
+        # el aspirador sale en gris mientras no limpia
+        self._disc("button", f"{uid}_clean_all", {
+            "name": t(lang, "Limpiar toda la casa"), "unique_id": f"{uid}_clean_all",
+            "command_topic": self.t_cmd, "payload_press": "start", "icon": "mdi:home"})
 
         # selectores: potencia / agua / mopa / modo / tipo de base. Las OPCIONES se traducen,
         # pero la clave canónica que entiende conga_core.commands se guarda en _opt_reverse
@@ -399,7 +455,7 @@ class MqttBridge:
             ("fan", "Potencia succión", self._fan_labels, "mdi:fan"),
             ("water", "Nivel agua", WATER_LABELS, "mdi:water"),
             ("mop", "Vibración mopa", MOP_LABELS, "mdi:vibrate"),
-            ("mode", "Modo de limpieza", CLEAN_MODE_LABELS, "mdi:broom"),
+            ("mode", "Modo de limpieza", self._mode_labels, "mdi:broom"),
             ("base_type", "Tipo de base", BASE_TYPE_LABELS, "mdi:home-import-outline"),
         ):
             opts, reverse = self._localized_options(labels)
@@ -489,7 +545,7 @@ class MqttBridge:
                 ("sensor", f"{uid}_bh_cycles"), ("sensor", f"{uid}_bh_health"),
                 ("sensor", f"{uid}_bh_drain"), ("sensor", f"{uid}_bh_charge"),
                 ("sensor", f"{uid}_sensor_hours"), ("binary_sensor", f"{uid}_sensor_due"),
-                ("button", f"{uid}_sensor_reset"),
+                ("button", f"{uid}_sensor_reset"), ("button", f"{uid}_clean_all"),
                 ("sensor", f"{uid}_warning"),
                 ("number", f"{uid}_volume"), ("button", f"{uid}_dust"),
                 ("select", f"{uid}_dust_freq"), ("binary_sensor", f"{uid}_low_water")]
@@ -542,7 +598,7 @@ class MqttBridge:
             # inglés, p. ej.) o, en el backend legacy, incluso en español ("Off" cuando la
             # opción publicada es "Máx"). Mismo patrón que _pub_dust_freq(). (review PR #18)
             labels = {"fan": self._fan_labels, "water": WATER_LABELS, "mop": MOP_LABELS,
-                      "mode": CLEAN_MODE_LABELS, "base_type": BASE_TYPE_LABELS}[action]
+                      "mode": self._mode_labels, "base_type": BASE_TYPE_LABELS}[action]
             self._pub(f"conga/{node}/pref/{action}", t(self._lang(), labels.get(v, v)))
         elif action == "twice":
             self.prefs["twice"] = bool(v)
@@ -757,9 +813,15 @@ class MqttBridge:
             self._pub(f"conga/{self.node}/ota", "on" if s.auto_upgrade else "off")
         self._pub_dust_freq()
         if s.consumables:
-            for key in ("main_brush", "side_brush", "filter", "dishcloth"):
-                if s.consumables.get(key) is not None:
-                    self._pub(f"conga/{self.node}/consumable/{key}", str(s.consumables[key]))
+            # el robot (y CA) dan HORAS de uso; el sensor de HA es «% de vida restante», como la web
+            for key, life in CONSUMABLE_LIFE_H.items():
+                used = s.consumables.get(key)
+                if used is not None:
+                    pct = max(0, round((life - float(used)) / life * 100))
+                    self._pub(f"conga/{self.node}/consumable/{key}", str(pct))
+        stats = getattr(self.robot, "stats", None)       # robeye: totales del robot (get/statistics)
+        if stats:
+            self._pub(f"conga/{self.node}/stats", json.dumps(stats))
 
     # ---------------- entrada: MQTT -> robot ----------------
     def _on_connect(self, client, userdata, flags, reason_code, properties=None):
@@ -794,6 +856,10 @@ class MqttBridge:
                     f"{self.disc}/switch/+/config", f"{self.disc}/button/+/config"):
             client.subscribe(sub)
         self.publish_discovery()
+        # la disponibilidad publicada antes de conectar se pierde, y el «offline» retenido del
+        # testamento (LWT) de la instancia anterior dejaba todo «no disponible» en HA: se republica
+        self._avail_state = None
+        self.publish_state()
 
     def _on_disconnect(self, client, userdata, *args):
         """Paho dispara esto tanto si la app llama a disconnect() (ver stop()) como si la

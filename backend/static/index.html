@@ -242,8 +242,14 @@
   .wizstep .hint{font-size:12px;line-height:1.5;color:var(--muted);margin:4px 0}
   .wizdns{display:flex;flex-direction:column;gap:6px;margin:8px 0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
   /* backend legacy (Conga 3xxx/4xxx): oculta lo que no existe en esa generación */
-  body.legacy .nolegacy,body.legacy .mDel{display:none!important}
+  body.legacy .nolegacy,body.legacy:not(.robeye) .mDel,body.legacy:not(.robeye) .legacyhide{display:none!important}
   body:not(.legacy) .onlylegacy{display:none!important}
+  /* backend robeye (Rowenta X-plorer…): sin agua/mopa ni los extras de la gen. legacy */
+  body.robeye .norobeye,body.robeye .onlylegacy{display:none!important}
+  body:not(.robeye) .onlyrobeye{display:none!important}
+  /* backend tuya (Conga 8290…): sin mapa (no lo manda en local), ni zonas, ni horarios todavía */
+  body.tuya .notuya,body.tuya .onlylegacy{display:none!important}
+  body:not(.tuya) .onlytuya{display:none!important}
   .mapnote{position:absolute;left:50%;transform:translateX(-50%);bottom:96px;z-index:5;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;width:max-content;max-width:calc(100% - 32px);padding:8px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:0 6px 20px rgba(0,0,0,.12);font-size:12.5px}
   .mapnote[hidden]{display:none}
   .mapnote .btn{width:auto;padding:5px 12px;font-size:12px}
@@ -342,17 +348,18 @@
       <div class="maphead"><span class="chiplbl mtitle" id="mapTitle">—</span><span class="mapsub"><span class="chiplbl" id="mapState"></span><span class="chiplbl" id="mapStats"></span><span class="chiplbl warn" id="mapWarn"></span></span></div>
       <div class="mapnote" id="pendMap" hidden><span>El robot tiene un mapa nuevo sin guardar.</span><button class="btn" id="pendSave">Guardar</button><button class="btn ghost" id="pendDrop">Descartar</button></div>
       <div class="mapnote onlylegacy" id="gotoNote" hidden><span>Toca en el mapa el punto al que quieres enviar el robot.</span><button class="btn ghost" id="gotoCancel">Cancelar</button></div>
-      <div class="mapctl">
+      <p class="hint onlytuya" style="margin:14px 16px">Este robot no envía su mapa por la red local (solo a la nube de Tuya), así que aquí no hay mapa ni habitaciones. El resto del control es local.</p>
+      <div class="mapctl notuya">
         <button class="iconbtn" id="rotL" title="Girar 90° a la izquierda" aria-label="Girar izquierda">↺</button>
         <button class="iconbtn" id="rotR" title="Girar 90° a la derecha" aria-label="Girar derecha">↻</button>
         <button class="iconbtn" id="flipB" title="Voltear en espejo" aria-label="Espejo">⇌</button>
       </div>
-      <div class="zoomctl" id="zoomCtl">
+      <div class="zoomctl notuya" id="zoomCtl">
         <button class="iconbtn" id="zoomIn" title="Acercar" aria-label="Acercar">+</button>
         <button class="iconbtn" id="zoomOut" title="Alejar" aria-label="Alejar">−</button>
         <button class="iconbtn" id="zoomReset" title="Ajustar" aria-label="Ajustar">⤢</button>
       </div>
-      <div class="mapwrap">
+      <div class="mapwrap notuya">
         <svg class="map" viewBox="0 0 400 300" role="img" aria-label="Mapa de la vivienda">
           <g>
             <g class="room" data-room="cocina"><rect class="rfill" x="14" y="14" width="156" height="118" rx="3" fill="var(--r2)"/><rect class="redge" x="14" y="14" width="156" height="118" rx="3" fill="none" stroke="transparent"/><text class="rlabel" x="92" y="77">Cocina</text></g>
@@ -393,7 +400,7 @@
       <div class="dockbar" role="group" aria-label="Controles del robot">
         <button class="dbtn primary" id="playBtn"><svg viewBox="0 0 24 24" fill="currentColor" id="playIco"><path d="M8 5v14l11-7z"/></svg><span id="playLbl">Iniciar</span></button>
         <button class="dbtn" id="homeBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>Base</button>
-        <button class="dbtn" id="locBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12a8 8 0 0 1 16 0M7 12a5 5 0 0 1 10 0M11 12a1 1 0 0 1 2 0"/></svg>Localizar</button>
+        <button class="dbtn norobeye" id="locBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12a8 8 0 0 1 16 0M7 12a5 5 0 0 1 10 0M11 12a1 1 0 0 1 2 0"/></svg>Localizar</button>
         <button class="dbtn" id="manBtn" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6M12 16v6M2 12h6M16 12h6"/><circle cx="12" cy="12" r="2.4"/></svg>Manual</button>
         <button class="dbtn onlylegacy" id="gotoBtn" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg>Ir aquí</button>
       </div>
@@ -409,27 +416,27 @@
     <section class="card panel">
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" aria-selected="true" data-pane="limpieza">Limpieza</button>
-        <button class="tab" role="tab" aria-selected="false" data-pane="zonas">Zonas</button>
-        <button class="tab" role="tab" aria-selected="false" data-pane="horarios">Horarios</button>
+        <button class="tab notuya" role="tab" aria-selected="false" data-pane="zonas">Zonas</button>
+        <button class="tab notuya" role="tab" aria-selected="false" data-pane="horarios">Horarios</button>
         <button class="tab" role="tab" aria-selected="false" data-pane="actividad">Actividad</button>
         <button class="tab" role="tab" aria-selected="false" data-pane="ajustes">Ajustes</button>
       </div>
 
       <div class="tabpane active" data-pane="limpieza">
-        <p class="hint">Toca una habitación (aquí o en el mapa) y pulsa limpiar.</p>
-        <div class="rooms" id="roomChips"></div>
-        <p class="hint" id="houseSum" style="opacity:.75;font-size:12px;margin:2px 0 4px;font-weight:560"></p>
+        <p class="hint notuya">Toca una habitación (aquí o en el mapa) y pulsa limpiar.</p>
+        <div class="rooms notuya" id="roomChips"></div>
+        <p class="hint notuya" id="houseSum" style="opacity:.75;font-size:12px;margin:2px 0 4px;font-weight:560"></p>
         <div class="phead">Modo</div>
-        <div class="seg" data-cmd="mode"><button data-v="Auto" aria-pressed="true">Auto</button><button data-v="Fregado">Fregado</button><button data-v="Bordes">Bordes</button><button data-v="Espiral">Espiral</button></div>
+        <div class="seg" data-cmd="mode"><button data-v="Auto" aria-pressed="true">Auto</button><button data-v="Fregado" class="norobeye">Fregado</button><button data-v="Bordes">Bordes</button><button data-v="Espiral" class="norobeye">Espiral</button><button data-v="Espiral cuadrada" class="onlytuya">Espiral cuadrada</button></div>
         <div class="phead">Succión</div>
         <div class="seg" data-cmd="fan"><button data-v="Off" id="fanOffBtn">Off</button><button data-v="Eco">Eco</button><button data-v="Normal" aria-pressed="true">Normal</button><button data-v="Turbo">Turbo</button></div>
-        <div class="phead">Agua</div>
-        <div class="seg" data-cmd="water"><button data-v="Off">Off</button><button data-v="Bajo">Bajo</button><button data-v="Medio" aria-pressed="true">Medio</button><button data-v="Alto">Alto</button></div>
-        <div class="phead">Mopa</div>
-        <div class="seg" data-cmd="mop"><button data-v="Off">Off</button><button data-v="Estándar" aria-pressed="true">Estándar</button><button data-v="Fuerte">Fuerte</button><button data-v="Potente">Potente</button></div>
-        <div class="row" style="margin-top:8px"><div class="rt"><div class="t">Doble pasada (x2)</div><div class="d">Pasa dos veces por cada zona</div></div><button class="toggle" id="twiceTog"></button></div>
+        <div class="phead norobeye">Agua</div>
+        <div class="seg norobeye" data-cmd="water"><button data-v="Off">Off</button><button data-v="Bajo">Bajo</button><button data-v="Medio" aria-pressed="true">Medio</button><button data-v="Alto">Alto</button></div>
+        <div class="phead norobeye notuya">Mopa</div>
+        <div class="seg norobeye notuya" data-cmd="mop"><button data-v="Off">Off</button><button data-v="Estándar" aria-pressed="true">Estándar</button><button data-v="Fuerte">Fuerte</button><button data-v="Potente">Potente</button></div>
+        <div class="row notuya" style="margin-top:8px"><div class="rt"><div class="t">Doble pasada (x2)</div><div class="d">Pasa dos veces por cada zona</div></div><button class="toggle" id="twiceTog"></button></div>
         <div class="btnrow">
-          <button class="btn" id="cleanSel" disabled>Limpiar selección</button>
+          <button class="btn notuya" id="cleanSel" disabled>Limpiar selección</button>
           <button class="btn ghost" id="cleanAll">Limpieza completa de la casa</button>
         </div>
       </div>
@@ -487,7 +494,8 @@
 
         <details id="robotOrdersWrap" class="netcfg" style="margin-top:14px">
           <summary>Horarios guardados en el robot (diagnóstico)</summary>
-          <p class="hint" style="opacity:.7;font-size:11.5px;margin:6px 0">Clean Assistant mantiene estos horarios sincronizados con los de arriba automáticamente, así que normalmente coinciden. Esta lista es solo para comprobar lo que el robot tiene guardado (incluye los creados en la app de Cecotec).</p>
+          <p class="hint onlyrobeye" style="opacity:.7;font-size:11.5px;margin:6px 0">Horarios creados con la app del robot. Los ejecuta el propio robot. Puedes importarlos a Clean Assistant: se importan desactivados; bórralos en la app del robot y activa el importado, para que no limpie dos veces.</p>
+          <p class="hint norobeye" style="opacity:.7;font-size:11.5px;margin:6px 0">Clean Assistant mantiene estos horarios sincronizados con los de arriba automáticamente, así que normalmente coinciden. Esta lista es solo para comprobar lo que el robot tiene guardado (incluye los creados en la app de Cecotec).</p>
           <div class="btnrow" style="margin:0 0 8px"><button class="btn ghost" id="refreshOrders" style="width:auto;padding:6px 12px;font-size:12px">Consultar al robot</button></div>
           <div id="robotOrdersList"></div>
         </details>
@@ -511,7 +519,7 @@
         <div class="seg nolegacy" id="linkSeg"><button data-v="local" aria-pressed="true">Local</button><button data-v="cloud">Cloud + Local</button></div>
         <p class="hint nolegacy" style="opacity:.65;font-size:11.5px;margin:6px 0 2px">Local: sin nube (la app de Cecotec no llega al robot). Cloud + Local: el robot pasa por la nube real, la app oficial funciona y se capturan sus comandos (útil para depurar).</p>
 
-        <details class="netcfg" id="netCfg">
+        <details class="netcfg norobeye notuya" id="netCfg">
           <summary>Configuración de red (DNS del robot)</summary>
           <p class="hint" style="opacity:.7;font-size:11.5px;margin:6px 0">Para que el robot hable con Clean Assistant, su tráfico a la nube de Cecotec debe redirigirse a este servidor. Crea reescrituras de DNS en AdGuard Home / Pi-hole / router:</p>
           <div class="wizdns">
@@ -534,32 +542,32 @@
           <input type="file" id="idFile" accept="application/json,.json" style="display:none"/>
         </details>
 
-        <div class="phead">Mapas de la casa</div>
+        <div class="phead notuya">Mapas de la casa</div>
         <p class="hint nolegacy" style="opacity:.65;font-size:11.5px;margin:0 0 8px">Clean Assistant recuerda los mapas que va viendo. Pulsa uno para activarlo en el robot. (Al cambiar de mapa, las zonas y horarios son por mapa.) Puedes borrar cualquier mapa; si borras el último, el robot se queda sin mapa y podrás crear uno nuevo desde cero.</p>
-        <div id="mapsList"></div>
-        <div class="btnrow nolegacy"><button class="btn ghost" id="newMapBtn">+ Crear mapa nuevo</button><button class="btn ghost" id="wipeMapsBtn" style="color:var(--critical)">Borrar todos</button></div>
-        <div id="newMapForm" class="nolegacy" style="display:none">
+        <div id="mapsList" class="notuya"></div>
+        <div class="btnrow legacyhide"><button class="btn ghost" id="newMapBtn">+ Crear mapa nuevo</button><button class="btn ghost norobeye" id="wipeMapsBtn" style="color:var(--critical)">Borrar todos</button></div>
+        <div id="newMapForm" class="legacyhide" style="display:none">
           <div class="field"><label>Nombre del mapa</label><input type="text" id="nmName" class="tinput" placeholder="Planta baja"/></div>
           <div class="field"><label>Nombre de la casa</label><input type="text" id="nmHouse" class="tinput" placeholder="Casa"/></div>
           <p class="hint" style="opacity:.65;font-size:11.5px;margin:0 0 6px">Al crear, el robot recorrerá toda la casa para mapearla (tarda un rato). El mapa nuevo empieza en blanco (sin zonas ni horarios).</p>
           <div class="btnrow"><button class="btn" id="nmCreate">Crear y mapear</button><button class="btn ghost" id="nmCancel">Cancelar</button></div>
         </div>
 
-        <div class="row"><div class="rt"><div class="t">Mapa en vivo en Home Assistant</div><div class="d">Publica por MQTT la imagen del mapa con el robot y el recorrido mientras limpia (cada 30 s)</div></div><button class="toggle" id="mapLiveTog"></button></div>
+        <div class="row notuya"><div class="rt"><div class="t">Mapa en vivo en Home Assistant</div><div class="d">Publica por MQTT la imagen del mapa con el robot y el recorrido mientras limpia (cada 30 s)</div></div><button class="toggle" id="mapLiveTog"></button></div>
         <div class="btnrow onlylegacy"><button class="btn ghost" id="resetMapBtn" style="color:var(--critical)">Reiniciar mapa</button></div>
 
-        <div class="phead">Robot</div>
-        <div class="row"><div class="rt"><div class="t">No molestar</div><div class="d" id="quietDesc">—</div></div><button class="toggle" id="quietTog"></button></div>
-        <div class="field" style="margin-top:2px"><label>Franja de silencio (inicio – fin)</label>
+        <div class="phead norobeye">Robot</div>
+        <div class="row norobeye"><div class="rt"><div class="t">No molestar</div><div class="d" id="quietDesc">—</div></div><button class="toggle" id="quietTog"></button></div>
+        <div class="field norobeye notuya" style="margin-top:2px"><label>Franja de silencio (inicio – fin)</label>
           <div class="slider"><input type="time" id="quietBegin" class="tinput" value="22:00"/><span style="opacity:.55">–</span><input type="time" id="quietEnd" class="tinput" value="07:00"/></div></div>
-        <div class="row"><div class="rt"><div class="t">Sonido</div></div><button class="toggle" id="voiceTog"></button></div>
-        <div class="field" style="margin-top:4px"><label>Volumen</label><div class="slider"><input type="range" min="0" max="10" value="7" id="vol" aria-label="Volumen"/><span class="v" id="volv">7</span></div></div>
-        <div class="row"><div class="rt"><div class="t">Turbo en alfombras</div><div class="d">Sube potencia al detectar alfombra</div></div><button class="toggle" id="carpetTog" aria-pressed="true"></button></div>
+        <div class="row norobeye"><div class="rt"><div class="t">Sonido</div></div><button class="toggle" id="voiceTog"></button></div>
+        <div class="field norobeye" style="margin-top:4px"><label>Volumen</label><div class="slider"><input type="range" min="0" max="10" value="7" id="vol" aria-label="Volumen"/><span class="v" id="volv">7</span></div></div>
+        <div class="row norobeye"><div class="rt"><div class="t">Turbo en alfombras</div><div class="d">Sube potencia al detectar alfombra</div></div><button class="toggle" id="carpetTog" aria-pressed="true"></button></div>
         <div class="row onlylegacy"><div class="rt"><div class="t">Mapa persistente</div><div class="d">El robot guarda el mapa y lo reutiliza en cada limpieza</div></div><button class="toggle" id="persistTog"></button></div>
-        <div class="row"><div class="rt"><div class="t">Actualizaciones automáticas</div><div class="d">Recomendado desactivar en local</div></div><button class="toggle" id="otaTog"></button></div>
-        <div class="phead">Base</div>
-        <div class="field"><label>Tipo de base</label><div class="seg" data-cmd="base_type"><button data-v="Base de carga">Base de carga</button><button data-v="Colector automático" aria-pressed="true">Colector automático</button></div></div>
-        <div class="field"><label>Frecuencia de vaciado</label>
+        <div class="row norobeye notuya"><div class="rt"><div class="t">Actualizaciones automáticas</div><div class="d">Recomendado desactivar en local</div></div><button class="toggle" id="otaTog"></button></div>
+        <div class="phead norobeye">Base</div>
+        <div class="field norobeye notuya"><label>Tipo de base</label><div class="seg" data-cmd="base_type"><button data-v="Base de carga">Base de carga</button><button data-v="Colector automático" aria-pressed="true">Colector automático</button></div></div>
+        <div class="field norobeye notuya"><label>Frecuencia de vaciado</label>
           <select id="dustFreq" class="tinput">
             <option value="-1">Nunca</option>
             <option value="0" selected>Después de cada limpieza</option>
@@ -568,8 +576,9 @@
             <option value="90">Cada 90 minutos</option>
             <option value="120">Cada 2 horas</option>
           </select></div>
-        <div class="btnrow" style="margin-top:6px"><button class="btn ghost" id="dustBtn">Vaciar base ahora</button></div>
+        <div class="btnrow norobeye" style="margin-top:6px"><button class="btn ghost" id="dustBtn">Vaciar base ahora</button></div>
         <div class="phead">Consumibles</div>
+        <p class="hint onlyrobeye" style="opacity:.65;font-size:11.5px;margin:0 0 6px">Clean Assistant cuenta las horas de limpieza desde que cambiaste cada pieza. Pulsa ↺ al cambiarla.</p>
         <div id="consList"></div>
         <div class="phead" style="margin-top:18px">Batería</div>
         <p class="hint" style="opacity:.65;font-size:11.5px;margin:0 0 6px">Estimación de Clean Assistant a partir de las limpiezas y cargas que va viendo.</p>
@@ -857,6 +866,26 @@
   "Error al crear el mapa":{en:"Failed to create the map",pt:"Erro ao criar o mapa",fr:"Échec de la création de la carte",pl:"Nie udało się utworzyć mapy",de:"Karte konnte nicht erstellt werden",it:"Errore nella creazione della mappa",nl:"Kaart maken mislukt",ca:"Error en crear el mapa"},
   "Cepillo lateral anormal: compruébalo y límpialo":{en:"Abnormal side brush: check and clean it",pt:"Escova lateral anómala: verifica-a e limpa-a",fr:"Brosse latérale anormale : vérifiez-la et nettoyez-la",pl:"Nieprawidłowa szczotka boczna: sprawdź ją i wyczyść",de:"Seitenbürste auffällig: prüfen und reinigen",it:"Spazzola laterale anomala: controllala e puliscila",nl:"Zijborstel afwijkend: controleer en reinig hem",ca:"Raspall lateral anormal: comprova'l i neteja'l"},
   "Sensor de reconocimiento visual anormal":{en:"Abnormal visual recognition sensor",pt:"Sensor de reconhecimento visual anómalo",fr:"Capteur de reconnaissance visuelle anormal",pl:"Nieprawidłowy czujnik rozpoznawania obrazu",de:"Sensor für Bilderkennung auffällig",it:"Sensore di riconoscimento visivo anomalo",nl:"Sensor voor beeldherkenning afwijkend",ca:"Sensor de reconeixement visual anormal"},
+  "Importar a Clean Assistant":{en:"Import to Clean Assistant",pt:"Importar para o Clean Assistant",fr:"Importer dans Clean Assistant",pl:"Importuj do Clean Assistant",de:"In Clean Assistant importieren",it:"Importa in Clean Assistant",nl:"Importeren in Clean Assistant",ca:"Importar a Clean Assistant"},
+  "Importado (desactivado). Bórralo en la app del robot y activa el de Clean Assistant para que no limpie dos veces.":{en:"Imported (disabled). Delete it in the robot's app and enable the Clean Assistant one, so it doesn't clean twice.",pt:"Importado (desativado). Apaga-o na app do robô e ativa o do Clean Assistant, para que não limpe duas vezes.",fr:"Importé (désactivé). Supprimez-le dans l'application du robot et activez celui de Clean Assistant pour éviter un double nettoyage.",pl:"Zaimportowano (wyłączony). Usuń go w aplikacji robota i włącz ten w Clean Assistant, aby nie sprzątał dwa razy.",de:"Importiert (deaktiviert). Lösche ihn in der App des Roboters und aktiviere den von Clean Assistant, damit nicht doppelt gereinigt wird.",it:"Importato (disattivato). Eliminalo nell'app del robot e attiva quello di Clean Assistant, così non pulirà due volte.",nl:"Geïmporteerd (uitgeschakeld). Verwijder hem in de app van de robot en schakel die van Clean Assistant in, zodat hij niet twee keer schoonmaakt.",ca:"Importat (desactivat). Esborra'l a l'app del robot i activa el de Clean Assistant perquè no netegi dues vegades."},
+  "Horarios creados con la app del robot. Los ejecuta el propio robot. Puedes importarlos a Clean Assistant: se importan desactivados; bórralos en la app del robot y activa el importado, para que no limpie dos veces.":{en:"Schedules created with the robot's app. The robot runs them itself. You can import them into Clean Assistant: they are imported disabled; delete them in the robot's app and enable the imported one, so it doesn't clean twice.",pt:"Horários criados com a app do robô. É o próprio robô que os executa. Podes importá-los para o Clean Assistant: são importados desativados; apaga-os na app do robô e ativa o importado, para que não limpe duas vezes.",fr:"Programmes créés avec l'application du robot. C'est le robot qui les exécute. Vous pouvez les importer dans Clean Assistant : ils sont importés désactivés ; supprimez-les dans l'application du robot et activez celui importé pour éviter un double nettoyage.",pl:"Harmonogramy utworzone w aplikacji robota. Wykonuje je sam robot. Możesz je zaimportować do Clean Assistant: importują się wyłączone; usuń je w aplikacji robota i włącz zaimportowany, aby nie sprzątał dwa razy.",de:"Mit der App des Roboters erstellte Zeitpläne. Der Roboter führt sie selbst aus. Du kannst sie in Clean Assistant importieren: Sie werden deaktiviert importiert; lösche sie in der App des Roboters und aktiviere den importierten, damit nicht doppelt gereinigt wird.",it:"Programmi creati con l'app del robot. Li esegue il robot stesso. Puoi importarli in Clean Assistant: vengono importati disattivati; eliminali nell'app del robot e attiva quello importato, così non pulirà due volte.",nl:"Schema's gemaakt met de app van de robot. De robot voert ze zelf uit. Je kunt ze in Clean Assistant importeren: ze worden uitgeschakeld geïmporteerd; verwijder ze in de app van de robot en schakel de geïmporteerde in, zodat hij niet twee keer schoonmaakt.",ca:"Horaris creats amb l'app del robot. Els executa el mateix robot. Pots importar-los a Clean Assistant: s'importen desactivats; esborra'ls a l'app del robot i activa l'importat perquè no netegi dues vegades."},
+  "Clean Assistant cuenta las horas de limpieza desde que cambiaste cada pieza. Pulsa ↺ al cambiarla.":{en:"Clean Assistant counts the cleaning hours since you replaced each part. Press ↺ when you replace it.",pt:"O Clean Assistant conta as horas de limpeza desde que trocaste cada peça. Prime ↺ ao trocá-la.",fr:"Clean Assistant compte les heures de nettoyage depuis le remplacement de chaque pièce. Appuyez sur ↺ quand vous la remplacez.",pl:"Clean Assistant liczy godziny sprzątania od wymiany każdej części. Naciśnij ↺ po jej wymianie.",de:"Clean Assistant zählt die Reinigungsstunden seit dem Austausch jedes Teils. Drücke ↺, wenn du es austauschst.",it:"Clean Assistant conta le ore di pulizia da quando hai sostituito ogni pezzo. Premi ↺ quando lo sostituisci.",nl:"Clean Assistant telt de schoonmaakuren sinds je elk onderdeel hebt vervangen. Druk op ↺ wanneer je het vervangt.",ca:"Clean Assistant compta les hores de neteja des que vas canviar cada peça. Prem ↺ quan la canviïs."},
+  "Tapa abierta: ciérrala para poder limpiar":{en:"Lid open: close it to be able to clean",pt:"Tampa aberta: fecha-a para poder limpar",fr:"Couvercle ouvert : fermez-le pour pouvoir nettoyer",pl:"Pokrywa otwarta: zamknij ją, aby sprzątać",de:"Deckel offen: schließe ihn, um reinigen zu können",it:"Coperchio aperto: chiudilo per poter pulire",nl:"Deksel open: sluit hem om te kunnen schoonmaken",ca:"Tapa oberta: tanca-la per poder netejar"},
+  "Falta el cepillo central: colócalo":{en:"Main brush missing: fit it",pt:"Falta a escova central: coloca-a",fr:"Brosse centrale absente : installez-la",pl:"Brak szczotki głównej: załóż ją",de:"Hauptbürste fehlt: setze sie ein",it:"Manca la spazzola centrale: inseriscila",nl:"Hoofdborstel ontbreekt: plaats hem",ca:"Falta el raspall central: col·loca'l"},
+  "Rueda bloqueada: revisa las ruedas":{en:"Wheel blocked: check the wheels",pt:"Roda bloqueada: verifica as rodas",fr:"Roue bloquée : vérifiez les roues",pl:"Koło zablokowane: sprawdź koła",de:"Rad blockiert: prüfe die Räder",it:"Ruota bloccata: controlla le ruote",nl:"Wiel geblokkeerd: controleer de wielen",ca:"Roda bloquejada: revisa les rodes"},
+  "Ventilador bloqueado: revisa el filtro y el depósito":{en:"Fan blocked: check the filter and the dustbin",pt:"Ventilador bloqueado: verifica o filtro e o depósito",fr:"Ventilateur bloqué : vérifiez le filtre et le bac",pl:"Wentylator zablokowany: sprawdź filtr i pojemnik",de:"Lüfter blockiert: prüfe Filter und Behälter",it:"Ventola bloccata: controlla il filtro e il contenitore",nl:"Ventilator geblokkeerd: controleer het filter en het reservoir",ca:"Ventilador bloquejat: revisa el filtre i el dipòsit"},
+  "Robot atascado: muévelo a una zona despejada":{en:"Robot stuck: move it to a clear area",pt:"Robô preso: move-o para uma zona livre",fr:"Robot coincé : déplacez-le vers une zone dégagée",pl:"Robot utknął: przenieś go w wolne miejsce",de:"Roboter steckt fest: stelle ihn an eine freie Stelle",it:"Robot bloccato: spostalo in una zona libera",nl:"Robot vast: zet hem op een vrije plek",ca:"Robot encallat: mou-lo a una zona lliure"},
+  "Rueda atascada: revisa que no esté enganchada":{en:"Wheel stuck: check it isn't caught",pt:"Roda presa: verifica que não está enganchada",fr:"Roue coincée : vérifiez qu'elle n'est pas accrochée",pl:"Koło utknęło: sprawdź, czy nie jest zaczepione",de:"Rad steckt fest: prüfe, ob es sich verhakt hat",it:"Ruota incastrata: controlla che non sia impigliata",nl:"Wiel vast: controleer of het niet vastzit",ca:"Roda encallada: revisa que no estigui enganxada"},
+  "Bomba de agua bloqueada":{en:"Water pump blocked",pt:"Bomba de água bloqueada",fr:"Pompe à eau bloquée",pl:"Pompa wody zablokowana",de:"Wasserpumpe blockiert",it:"Pompa dell'acqua bloccata",nl:"Waterpomp geblokkeerd",ca:"Bomba d'aigua bloquejada"},
+  "Falta la bomba de agua":{en:"Water pump missing",pt:"Falta a bomba de água",fr:"Pompe à eau absente",pl:"Brak pompy wody",de:"Wasserpumpe fehlt",it:"Manca la pompa dell'acqua",nl:"Waterpomp ontbreekt",ca:"Falta la bomba d'aigua"},
+  "Agitador de la mopa bloqueado":{en:"Mop agitator blocked",pt:"Agitador da mopa bloqueado",fr:"Agitateur de la serpillière bloqué",pl:"Mieszadło mopa zablokowane",de:"Wischpad-Rüttler blockiert",it:"Agitatore del mop bloccato",nl:"Dweilaandrijving geblokkeerd",ca:"Agitador de la mopa bloquejat"},
+  "Falta el agitador de la mopa":{en:"Mop agitator missing",pt:"Falta o agitador da mopa",fr:"Agitateur de la serpillière absent",pl:"Brak mieszadła mopa",de:"Wischpad-Rüttler fehlt",it:"Manca l'agitatore del mop",nl:"Dweilaandrijving ontbreekt",ca:"Falta l'agitador de la mopa"},
+  "Parada de seguridad: reinicia el robot":{en:"Safety stop: restart the robot",pt:"Paragem de segurança: reinicia o robô",fr:"Arrêt de sécurité : redémarrez le robot",pl:"Zatrzymanie bezpieczeństwa: uruchom robota ponownie",de:"Sicherheitsstopp: starte den Roboter neu",it:"Arresto di sicurezza: riavvia il robot",nl:"Veiligheidsstop: herstart de robot",ca:"Parada de seguretat: reinicia el robot"},
+  "Error interno del robot: reinícialo":{en:"Internal robot error: restart it",pt:"Erro interno do robô: reinicia-o",fr:"Erreur interne du robot : redémarrez-le",pl:"Błąd wewnętrzny robota: uruchom go ponownie",de:"Interner Roboterfehler: starte ihn neu",it:"Errore interno del robot: riavvialo",nl:"Interne robotfout: herstart hem",ca:"Error intern del robot: reinicia'l"},
+  "Silencio":{en:"Quiet",pt:"Silêncio",fr:"Silence",pl:"Cichy",de:"Leise",it:"Silenzioso",nl:"Stil",ca:"Silenci"},
+  "Espiral cuadrada":{en:"Square spiral",pt:"Espiral quadrada",fr:"Spirale carrée",pl:"Spirala kwadratowa",de:"Quadratische Spirale",it:"Spirale quadrata",nl:"Vierkante spiraal",ca:"Espiral quadrada"},
+  "En una zona prohibida: sácalo de ella":{en:"In a no-go zone: move it out",pt:"Numa zona proibida: tira-o de lá",fr:"Dans une zone interdite : sortez-le",pl:"W strefie zakazanej: wyjmij go z niej",de:"In einer Sperrzone: hol ihn heraus",it:"In una zona vietata: spostalo fuori",nl:"In een verboden zone: haal hem eruit",ca:"En una zona prohibida: treu-lo"},
+  "Este robot no envía su mapa por la red local (solo a la nube de Tuya), así que aquí no hay mapa ni habitaciones. El resto del control es local.":{en:"This robot doesn't send its map over the local network (only to the Tuya cloud), so there is no map or rooms here. Everything else is controlled locally.",pt:"Este robô não envia o mapa pela rede local (só para a nuvem Tuya), por isso aqui não há mapa nem divisões. O resto do controlo é local.",fr:"Ce robot n'envoie pas sa carte sur le réseau local (seulement au cloud Tuya) : il n'y a donc ni carte ni pièces ici. Le reste du contrôle est local.",pl:"Ten robot nie wysyła mapy przez sieć lokalną (tylko do chmury Tuya), więc nie ma tu mapy ani pomieszczeń. Reszta sterowania jest lokalna.",de:"Dieser Roboter sendet seine Karte nicht über das lokale Netzwerk (nur an die Tuya-Cloud), daher gibt es hier keine Karte und keine Räume. Alles andere wird lokal gesteuert.",it:"Questo robot non invia la mappa sulla rete locale (solo al cloud Tuya), quindi qui non ci sono mappa né stanze. Il resto del controllo è locale.",nl:"Deze robot stuurt zijn kaart niet via het lokale netwerk (alleen naar de Tuya-cloud), dus hier is geen kaart en zijn er geen kamers. De rest wordt lokaal bediend.",ca:"Aquest robot no envia el mapa per la xarxa local (només al núvol de Tuya), així que aquí no hi ha mapa ni habitacions. La resta del control és local."},
   "Sensor infrarrojo de esquinas anormal":{en:"Abnormal infrared corner sensor",pt:"Sensor infravermelho de cantos anómalo",fr:"Capteur infrarouge d'angles anormal",pl:"Nieprawidłowy czujnik podczerwieni narożników",de:"Infrarot-Ecksensor auffällig",it:"Sensore a infrarossi degli angoli anomalo",nl:"Infraroodsensor voor hoeken afwijkend",ca:"Sensor infraroig de cantonades anormal"},
   "Se ha caído el depósito de polvo":{en:"The dust bin has fallen off",pt:"O depósito de pó caiu",fr:"Le bac à poussière est tombé",pl:"Pojemnik na kurz wypadł",de:"Der Staubbehälter ist herausgefallen",it:"Il contenitore della polvere è caduto",nl:"Het stofreservoir is losgeraakt",ca:"S'ha caigut el dipòsit de pols"},
   "Se ha caído el depósito de agua 2 en 1":{en:"The 2-in-1 water tank has fallen off",pt:"O depósito de água 2 em 1 caiu",fr:"Le réservoir d'eau 2 en 1 est tombé",pl:"Zbiornik na wodę 2 w 1 wypadł",de:"Der 2-in-1-Wassertank ist herausgefallen",it:"Il serbatoio dell'acqua 2 in 1 è caduto",nl:"Het 2-in-1-waterreservoir is losgeraakt",ca:"S'ha caigut el dipòsit d'aigua 2 en 1"},
@@ -933,6 +962,7 @@
   "Aún no hay mapas recordados. Aparecerán al cargar el mapa del robot.":{en:"No maps remembered yet. They'll appear when the robot's map loads.",pt:"Ainda não há mapas guardados. Aparecerão ao carregar o mapa do robô.",fr:"Aucune carte mémorisée pour l’instant. Elles apparaîtront au chargement de la carte du robot.",pl:"Brak zapamiętanych map. Pojawią się po załadowaniu mapy robota.",de:"Noch keine Karten gespeichert. Sie erscheinen, wenn die Roboterkarte geladen wird.",it:"Ancora nessuna mappa memorizzata. Appariranno al caricamento della mappa del robot.",nl:"Nog geen kaarten onthouden. Ze verschijnen wanneer de robotkaart wordt geladen.",ca:"Encara no hi ha mapes recordats. Apareixeran en carregar el mapa del robot."},
   "(sin nombre)":{en:"(no name)",pt:"(sem nome)",fr:"(sans nom)",pl:"(bez nazwy)",de:"(ohne Name)",it:"(senza nome)",nl:"(zonder naam)",ca:"(sense nom)"},
   "Activo":{en:"Active",pt:"Ativo",fr:"Actif",pl:"Aktywna",de:"Aktiv",it:"Attiva",nl:"Actief",ca:"Actiu"},
+  "Desactivar":{en:"Deactivate",pt:"Desativar",fr:"Désactiver",pl:"Dezaktywuj",de:"Deaktivieren",it:"Disattiva",nl:"Deactiveren",ca:"Desactivar"},
   "Activar":{en:"Activate",pt:"Ativar",fr:"Activer",pl:"Aktywuj",de:"Aktivieren",it:"Attiva",nl:"Activeren",ca:"Activar"},
   "Toca para editar la casa":{en:"Tap to edit the house",pt:"Toca para editar a casa",fr:"Touchez pour modifier la maison",pl:"Dotknij, aby edytować dom",de:"Zum Bearbeiten des Hauses tippen",it:"Tocca per modificare la casa",nl:"Tik om het huis te bewerken",ca:"Toca per editar la casa"},
   "Renombrar mapa":{en:"Rename map",pt:"Renomear mapa",fr:"Renommer la carte",pl:"Zmień nazwę mapy",de:"Karte umbenennen",it:"Rinomina mappa",nl:"Kaart hernoemen",ca:"Reanomenar mapa"},
@@ -2154,6 +2184,10 @@
   var MODE_OPTS={fan:['Eco','Normal','Turbo'],water:['Off','Bajo','Medio','Alto'],mop:['Off','Estándar','Fuerte','Potente']};
   var MODE_LBL={fan:'Succión',water:'Agua',mop:'Mopa'};
   var MODE_DEF={fan:'Normal',water:'Medio',mop:'Estándar',twice:false};
+  // robeye (Rowenta): sin agua ni mopa en los horarios; succión con sus 4 niveles («Off» = Silencio)
+  function isRobeye(){ return document.body.classList.contains('robeye'); }
+  function modeOpts(field){ return (field==='fan'&&isRobeye())?['Off','Eco','Normal','Turbo']:MODE_OPTS[field]; }
+  function fanLabel(v){ return (v==='Off'&&isRobeye())?t('Silencio'):t(v); }
   // config sugerida según el tipo de suelo (roomMaterialId 1..4): alfombra solo aspira,
   // madera suave/poca agua, azulejos fregado fuerte, suave normal.
   var FLOOR_DEF={4:{fan:'Turbo',water:'Off',mop:'Off'},3:{fan:'Eco',water:'Bajo',mop:'Estándar'},
@@ -2171,7 +2205,7 @@
     if(!SCHEDULES.length){ el.innerHTML='<p class="hint" style="opacity:.65">'+t('Aún no hay horarios.')+'</p>'; return; }
     SCHEDULES.forEach(function(p){
       var days=DAY_KEYS.map(function(d,i){return '<span class="day'+((p.days||[]).indexOf(d[0])>=0?' on':'')+'">'+(CA_DAYLET[CA_LANG][i]||d[1])+'</span>';}).join('');
-      var rooms=(p.rooms||[]).map(function(r,i){return '<span class="pr"><b>'+(i+1)+'. '+roomName(r.room)+'</b> · '+t(r.fan||'')+(r.twice?' · x2':'')+'</span>';}).join('');
+      var rooms=(p.rooms||[]).map(function(r,i){return '<span class="pr"><b>'+(i+1)+'. '+roomName(r.room)+'</b> · '+fanLabel(r.fan||'')+(r.twice?' · x2':'')+'</span>';}).join('');
       var card=document.createElement('div'); card.className='sched';
       card.innerHTML='<div class="top"><span class="nm"></span><span class="tm">'+(p.time||'')+'</span><button class="toggle sEn" style="margin-left:auto" aria-pressed="'+(p.enable?'true':'false')+'"></button></div>'+
         '<div class="days">'+days+'</div><div class="perroom">'+rooms+'</div>'+
@@ -2243,8 +2277,8 @@
   }
   function buildModeSeg(field,current,onChange){
     var seg=document.createElement('div'); seg.className='seg';
-    MODE_OPTS[field].forEach(function(opt){
-      var b=document.createElement('button'); b.textContent=t(opt); b.dataset.v=opt;
+    modeOpts(field).forEach(function(opt){
+      var b=document.createElement('button'); b.textContent=(field==='fan')?fanLabel(opt):t(opt); b.dataset.v=opt;
       if(opt===current)b.setAttribute('aria-pressed','true');
       b.addEventListener('click',function(){ seg.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',x===b);}); onChange(opt); });
       seg.appendChild(b);
@@ -2258,7 +2292,7 @@
       var mode=editorModes[id]||(editorModes[id]=Object.assign({},MODE_DEF));
       var card=document.createElement('div'); card.className='rmode';
       var head=document.createElement('div'); head.className='rmhead'; head.textContent=(editorSel.indexOf(id)+1)+'. '+roomName(id); card.appendChild(head);
-      ['fan','water','mop'].forEach(function(field){
+      (isRobeye()?['fan']:['fan','water','mop']).forEach(function(field){
         var lab=document.createElement('div'); lab.className='rmlbl'; lab.textContent=t(MODE_LBL[field]); card.appendChild(lab);
         card.appendChild(buildModeSeg(field,mode[field],function(v){mode[field]=v;}));
       });
@@ -2326,8 +2360,26 @@
         '<div class="days">'+days+'</div>'+
         '<div class="perroom"><span class="pr">'+t('Habitaciones: {list}',{list:(rooms.join(', ')||t('todas'))})+'</span></div>'+
         // gen. legacy: solo lectura (borrar en el robot aún no está soportado)
-        (document.body.classList.contains('legacy')?'':'<div class="actions"><button class="btn ghost odel">'+t('Borrar del robot')+'</button></div>');
+        (document.body.classList.contains('robeye')?'<div class="actions"><button class="btn ghost oen">'+t(o.enable?'Desactivar':'Activar')+'</button><button class="btn ghost odel">'+t('Borrar del robot')+'</button><button class="btn ghost oimp">'+t('Importar a Clean Assistant')+'</button></div>':
+         document.body.classList.contains('legacy')?'':'<div class="actions"><button class="btn ghost odel">'+t('Borrar del robot')+'</button></div>');
       card.querySelector('.nm').innerHTML=(o.order_name||('#'+o.orderid))+(sat?' <b style="color:var(--critical)">'+t('⚠ sábado')+'</b>':'');
+      var oen=card.querySelector('.oen');
+      if(oen) oen.addEventListener('click',function(){
+        oen.disabled=true;
+        fetch(BASE+'api/robot/orders/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderid:o.orderid,enable:!o.enable})})
+          .then(function(r){return r.json();}).then(function(){ oen.disabled=false; });
+      });
+      var oimp=card.querySelector('.oimp');
+      if(oimp) oimp.addEventListener('click',function(){
+        var keys={1:'dom',2:'lun',4:'mar',8:'mie',16:'jue',32:'vie',64:'sab'}, days=[];
+        Object.keys(keys).forEach(function(b){ if(mask&(+b)) days.push(keys[b]); });
+        var p={name:o.order_name||t('Horario'),time:hhmm(o.day_time||0),days:days,enable:false,
+               rooms:(o.roomPer||[]).map(function(r){ return {room:r.room_id,fan:MODE_DEF.fan,water:MODE_DEF.water,mop:MODE_DEF.mop,twice:false}; })};
+        oimp.disabled=true;
+        fetch(BASE+'api/schedules/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:p})})
+          .then(function(r){return r.json();}).then(function(res){ SCHEDULES=res.schedules||SCHEDULES; renderSchedules();
+            uiAlert(t('Importado (desactivado). Bórralo en la app del robot y activa el de Clean Assistant para que no limpie dos veces.')); });
+      });
       var odel=card.querySelector('.odel');
       if(odel) odel.addEventListener('click',async function(){
         if(await uiConfirm(t('¿Borrar del robot el horario "{name}"? (orderid {id})',{name:(o.order_name||o.orderid),id:o.orderid})))
@@ -2492,7 +2544,7 @@
   document.getElementById('nmCreate').addEventListener('click',async function(){
     var name=document.getElementById('nmName').value.trim(), house=document.getElementById('nmHouse').value.trim();
     if(!name){ uiAlert(t('Ponle un nombre al mapa.')); return; }
-    var wipe=((HOUSE_MAPS.maps||[]).length===0);   // primer mapa: se borran los previos del robot
+    var wipe=((HOUSE_MAPS.maps||[]).length===0)&&!document.body.classList.contains('robeye');   // primer mapa: se borran los previos del robot
     var msg=wipe
       ? t('¿Crear el mapa "{name}"? Se borrarán los mapas, zonas y horarios que el robot tenga ahora y empezará a mapear la casa de cero.',{name:name})
       : t('¿Crear el mapa "{name}"? El robot empezará a recorrer la casa para mapearla (se añadirá a los mapas que ya tienes).',{name:name});
@@ -2526,6 +2578,7 @@
   }
   function maybeWizard(){
     if(_wizShown) return;
+    if(document.body.classList.contains('robeye')||document.body.classList.contains('tuya')) return;   // sin DNS que configurar ni mapa que crear
     if(localStorage.getItem('ca_wizard_dismissed')==='1') return;
     if((HOUSE_MAPS.maps||[]).length>0) return;   // ya hay mapa -> no molestar
     if(robotBusyMapping()) return;                // está mapeando/limpiando -> no molestar
@@ -2671,10 +2724,13 @@
     var ver=document.getElementById('appVer');
     if(ver&&info.version) ver.textContent='v'+info.version;
     if(info.backend==='legacy') document.body.classList.add('legacy');   // Conga 3xxx/4xxx
+    if(info.backend==='robeye'){ document.body.classList.add('legacy','robeye'); renderRobotOrders(); }   // Rowenta X-plorer (API local)
+    if(info.backend==='tuya') document.body.classList.add('legacy','tuya');   // Congas sobre Tuya (8290…), sin mapa
     // El botón de succión "Off" (seg[data-cmd=fan]) es un apagado real SOLO en el backend nuevo.
     // En el legacy, conga_core/legacy/robot.py remapea ese mismo valor a "máximo" de verdad
     // (ver FAN_LABELS_LEGACY en mqtt_bridge.py) -- ahí el botón vuelve a decir "Máx", traducido.
-    if(info.backend==='legacy'){ var fb=document.getElementById('fanOffBtn'); if(fb){ fb.textContent=t('Máx');
+    if(info.backend==='robeye'){ var fr=document.getElementById('fanOffBtn'); if(fr) fr.textContent=t('Silencio'); }
+    else if(info.backend==='legacy'){ var fb=document.getElementById('fanOffBtn'); if(fb){ fb.textContent=t('Máx');
       fb.parentNode.appendChild(fb); } }   // relabelled "Máx" reads better at the end, not first (review #18)
     var ml=document.getElementById('mapLiveTog'); if(ml) ml.setAttribute('aria-pressed',!!info.map_image_live);
     var el=document.getElementById('entityLangSel'); if(el&&info.lang){ el.value=info.lang; el.setAttribute('data-prev',info.lang); }
